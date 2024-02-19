@@ -1,0 +1,2660 @@
+#+title: Doom Emacs Config
+#+author: tokinanpa
+#+email: kiana.a.sheibani@gmail.com
+#+property: header-args :mkdirp yes :results silent :exports code :eval no-export
+#+property: header-args:shell :tangle "setup.sh"
+
+* Introduction
+
+#+begin_quote
+Emacs outshines all other editing software in approximately the same way that
+the noonday sun does the stars. It is not just bigger and brighter; it simply
+makes everything else vanish.
+
+  -- Neil Stephenson, /In the Beginning was the Command Line/ (1998)
+#+end_quote
+
+*Hello!*
+
+This is a literate configuration for [[https:github.com/doomemacs/doomemacs][Doom Emacs]].
+
+** Background; or, My Emacs Story
+
+Given that you are currently reading an Emacs config, I will assume that you
+already have a moderate understanding of what Emacs is and the ideas behind its
+configuration system. If you do not, then [[https://docs.doomemacs.org/v21.12/#/users/intro/why-emacs][this section]] of the official Doom
+Emacs documentation makes for a decent introduction.
+
+Rather than use this space to explain Emacs, I will instead use it to chronicle
+my history with Emacs, how I got here, and what lessons should be taken away
+from this experience. Don't worry, I promise it won't be long.
+
+*** In The Beginning
+
+My first brush with Emacs was in around 2019, when I installed it for use with
+the proof assistant language Agda. I had vaguely heard tales about its beauty
+and power, but I was nowhere near comfortable enough with config files and
+programming in general to fully appreciate its capabilities (not to mention that
+I was using Windows at the time). I bounced off of it pretty quickly because...
+well, vanilla Emacs is just kinda terrible.
+
+#+caption[Vanilla Emacs]: Look at this and tell me that it doesn't look at least a little awful.
+#+name: vanilla-emacs
+[[file:assets/vanilla_emacs.png]]
+
+A few years later in 2022, after I had moved to the more sensible OS of Arch
+Linux, I discovered that my preferred text editor [[https://atom-editor.cc/][Atom]] was in the process of
+being discontinued and began to look for a replacement. I tried Visual Studio
+Code for a little while, but after some serious use I became dissatisfied with
+how few options there were to customize it to fit my workflow.
+
+It was at this point that I started thinking about Emacs again. By chance, I
+happened to stumble upon Doom Emacs, and it turned out to be exactly what I was
+looking for:
+
+- Extreme flexibility
+- Robust modular configuration system
+- Sensible defaults
+- Extensive ecosystem
+
+As I became more comfortable with configuration via scripting, I immersed myself
+into the many utilities that make up the Emacs ecosystem: =org-mode=, =calfw=, =calc=,
+=mu4e=. I started putting more and more time into tweaking these applications to
+fit my needs, my files kept getting longer and longer, and eventually I fully
+fell off the deep end and now we're here.
+
+*** TODO Literate Programming
+
+My first Doom Emacs config was hacked together directly from the generated
+example config: no comments, no organization, nothing. ~after!~ and ~use-package!~
+blocks were scattered about the file without rhyme or reason, making it very
+difficult to remember what any particular line of code was actually doing. I was
+able to mitigate some of this issue by sorting my config into multiple files,
+but at the end of the day it was a losing battle. The config directory was at
+1200 lines of code before I decided that something needed to be done.
+
+I was considering what to do about this problem of organizational decay when I
+came across [[https://tecosaur.github.io/emacs-config/config.html][Tecosaur's config]] and learned about =org-mode='s literate programming
+support. I had been using =org-mode= for several months at this point and was very
+comfortable with it, so utilizing it to better organize my code seemed like a
+good idea.
+
+*** =confpkg=
+
+As part of their literate config, Tecosaur implemented =confpkg=, an embedded
+Emacs Lisp library that manages multiple aspects of config tangling:
+
+- Controlling what files each code block is tangled to
+- Generating package files from templates
+- Automatically detecting cross-section dependencies
+- Reporting profiling information on config load times
+
+It's an incredibly impressive utility, and I highly recommend reading
+[[https://tecosaur.github.io/emacs-config/config.html#rudimentary-configuration-confpkg][the section in their config]] on its design. I tried to read through it myself,
+but I don't understand half of it; it's a bizarre mixture of exploits to hook
+into =org-mode='s tangling process, self-modifying buffer shenanigans, and abuse
+of various features of =org-babel=.
+
+Luckily, I don't need to be able to understand code in order to do what I do
+best: press =Ctrl+C= and =Ctrl+V= in that order. Programming!
+
+If you're reading the raw org file instead of the published version, the code
+for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
+
+- Prevent the code from being exported
+- Reorganize to get rid of superfluous noweb references
+- Change the package template to contain my information
+
+**** Confpkg :noexport:
+:PROPERTIES:
+:header-args: :tangle no :noweb yes :mkdirp yes :results silent :eval no-export
+:END:
+
+***** Preparation
+
+#+name: confpkg-prepare
+#+begin_src emacs-lisp
+(condition-case nil
+    (progn
+      (message "Intitialising confpkg")
+      (org-fold-core-ignore-fragility-checks
+        (org-babel-map-executables nil
+          (when (eq (org-element-type (org-element-context)) 'babel-call)
+            (org-babel-lob-execute-maybe)))))
+  (quit (revert-buffer t t t)))
+#+end_src
+
+#+header: :tangle (expand-file-name (make-temp-name "emacs-org-babel-excuses/confpkg-prepare-") temporary-file-directory)
+#+begin_src emacs-lisp
+<<confpkg-prepare()>>
+#+end_src
+
+***** Setup
+
+#+name: confpkg-setup
+#+begin_src emacs-lisp :results silent
+
+(setq confpkg--num 0
+      confpkg--list nil)
+
+;; Dependency handling
+
+(defun confpkg--rough-extract-definitions (file)
+  (with-temp-buffer
+    (insert-file-contents file)
+    (goto-char (point-min))
+    (let (symbols)
+      (while (re-search-forward
+              (rx line-start (* (any ?\s ?\t)) "("
+                  (or "defun" "defmacro" "defsubst" "defgeneric" "defalias" "defvar" "defcustom" "defface" "deftheme"
+                      "cl-defun" "cl-defmacro" "cl-defsubst" "cl-defmethod" "cl-defstruct" "cl-defgeneric" "cl-deftype")
+                  (+ (any ?\s ?\t))
+                  (group (+ (any "A-Z" "a-z" "0-9"
+                                 ?+ ?- ?* ?/ ?_ ?~ ?! ?@ ?$ ?% ?^ ?& ?= ?: ?< ?> ?{ ?})))
+                  (or blank ?\n))
+              nil t)
+        (push (match-string 1) symbols))
+      symbols)))
+
+(defun confpkg--rough-uses-p (file symbols)
+  (with-temp-buffer
+    (insert-file-contents file)
+    (let ((symbols (copy-sequence symbols)) uses-p)
+      (while symbols
+        (goto-char (point-min))
+        (if (re-search-forward (rx word-start (literal (car symbols)) word-end) nil t)
+            (setq uses-p t symbols nil)
+          (setq symbols (cdr symbols))))
+      uses-p)))
+
+(defun confpkg-annotate-list-dependencies ()
+  (dolist (confpkg confpkg--list)
+    (plist-put confpkg :defines
+               (confpkg--rough-extract-definitions
+                (plist-get confpkg :file))))
+  (dolist (confpkg confpkg--list)
+    (let ((after (plist-get confpkg :after))
+          requires)
+      (dolist (other-confpkg confpkg--list)
+        (when (and (not (eq other-confpkg confpkg))
+                   (confpkg--rough-uses-p (plist-get confpkg :file)
+                                          (plist-get other-confpkg :defines)))
+          (push (plist-get other-confpkg :package) requires)))
+      (when (and after (symbolp after))
+        (push after requires))
+      (plist-put confpkg :requires requires))))
+
+(defun confpkg-write-dependencies ()
+  (dolist (confpkg confpkg--list)
+    (when (plist-get confpkg :requires)
+      (with-temp-buffer
+        (setq buffer-file-name (plist-get confpkg :file))
+        (insert-file-contents buffer-file-name)
+        (re-search-forward "^;;; Code:\n")
+        (insert "\n")
+        (dolist (req (plist-get confpkg :requires))
+          (insert (format "(require '%s)\n" req)))
+        (write-region nil nil buffer-file-name)
+        (set-buffer-modified-p nil)))))
+
+;; Commenting package statements
+
+(defun confpkg-comment-out-package-statements ()
+  (dolist (confpkg confpkg--list)
+    (with-temp-buffer
+      (setq buffer-file-name (plist-get confpkg :file))
+      (insert-file-contents buffer-file-name)
+      (goto-char (point-min))
+      (while (re-search-forward "^;;; Code:\n[[:space:]\n]*(\\(package!\\|unpin!\\)[[:space:]\n]+\\([^[:space:]]+\\)\\b" nil t)
+        (plist-put confpkg :package-statements
+                   (nconc (plist-get confpkg :package-statements)
+                          (list (match-string 2))))
+        (let* ((start (progn (beginning-of-line) (point)))
+               (end (progn (forward-sexp 1)
+                           (if (looking-at "[\t ]*;.*")
+                               (line-end-position)
+                             (point))))
+               (contents (buffer-substring start end))
+               paste-start paste-end
+               (comment-start ";")
+               (comment-padding "   ")
+               (comment-end ""))
+          (delete-region start (1+ end))
+          (re-search-backward "^;;; Code:")
+          (beginning-of-line)
+          (insert ";;  Package statement:\n")
+          (setq paste-start (point))
+          (insert contents)
+          (setq paste-end (point))
+          (insert  "\n;;\n")
+          (comment-region paste-start paste-end 2)))
+      (when (buffer-modified-p)
+        (write-region nil nil buffer-file-name)
+        (set-buffer-modified-p nil)))))
+
+(defun confpkg-create-config ()
+  (let ((revert-without-query '("config\\.el"))
+        (keywords (org-collect-keywords '("AUTHOR" "EMAIL")))
+        (original-buffer (current-buffer)))
+    (with-temp-buffer
+      (insert
+       (format ";;; config.el -*- lexical-binding: t; -*-
+
+;; SPDX-FileCopyrightText: © 2020-%s %s <%s>
+;; SPDX-License-Identifier: MIT
+
+;; Generated at %s from the literate configuration.
+
+(add-to-list 'load-path %S)\n"
+               (format-time-string "%Y")
+               (cadr (assoc "AUTHOR" keywords))
+               (cadr (assoc "EMAIL" keywords))
+               (format-time-string "%FT%T%z")
+               (replace-regexp-in-string
+                (regexp-quote (getenv "HOME")) "~"
+                (expand-file-name "subconf/"))))
+      (mapc
+       (lambda (confpkg)
+         (insert
+          (if (eq 'none (plist-get confpkg :via))
+              (format "\n;;; %s intentionally omitted.\n" (plist-get confpkg :name))
+            (with-temp-buffer
+              (cond
+               ((eq 'copy (plist-get confpkg :via))
+                (insert-file-contents (plist-get confpkg :file))
+                (goto-char (point-min))
+                (narrow-to-region
+                 (re-search-forward "^;;; Code:\n+")
+                 (progn
+                   (goto-char (point-max))
+                   (re-search-backward (format "[^\n\t ][\n\t ]*\n[\t ]*(provide '%s)" (plist-get confpkg :package)))
+                   (match-end 0))))
+               ((eq 'require (plist-get confpkg :via))
+                (insert (format "(require '%s)\n" (plist-get confpkg :package))))
+               (t (insert (format "(warn \"%s confpkg :via has unrecognised value: %S\" %S %S)"
+                                  (plist-get confpkg :name) (plist-get confpkg :via)))))
+              (goto-char (point-min))
+              (insert "\n;;:------------------------"
+                      "\n;;; " (plist-get confpkg :name)
+                      "\n;;:------------------------\n\n")
+              (when (plist-get confpkg :defines)
+                (insert ";; This block defines "
+                        (mapconcat
+                         (lambda (d) (format "`%s'" d))
+                         (plist-get confpkg :defines)
+                         ", ")
+                        ".")
+                (when (re-search-backward "\\([^, ]+\\), \\([^, ]+\\), \\([^, ]+\\).\\="
+                                          (line-beginning-position) t)
+                  (replace-match "\\1, \\2, and \\3."))
+                (when (re-search-backward "\\([^, ]+\\), \\([^, ]+\\).\\="
+                                          (line-beginning-position) t)
+                  (replace-match "\\1 and \\2."))
+                (insert "\n\n")
+                (forward-line -2)
+                (setq-local comment-start ";")
+                (fill-comment-paragraph)
+                (forward-paragraph 1)
+                (forward-line 1))
+              (if (equal (plist-get confpkg :package) "config-confpkg-timings")
+                  (progn
+                    (goto-char (point-max))
+                    (insert "\n\n\
+(confpkg-create-record 'doom-pre-config (float-time (time-subtract (current-time) before-init-time)))
+(confpkg-start-record 'config)
+(confpkg-create-record 'config-defered 0.0 'config)
+(confpkg-create-record 'set-hooks 0.0 'config-defered)
+(confpkg-create-record 'load-hooks 0.0 'config-defered)
+(confpkg-create-record 'requires 0.0 'root)\n"))
+                (let ((after (plist-get confpkg :after))
+                      (pre (and (plist-get confpkg :pre)
+                                (org-babel-expand-noweb-references
+                                 (list "emacs-lisp"
+                                       (format "<<%s>>" (plist-get confpkg :pre))
+                                       '((:noweb . "yes")
+                                         (:comments . "none")))
+                                 original-buffer)))
+                      (name (replace-regexp-in-string
+                             "config--?" ""
+                             (plist-get confpkg :package))))
+                  (if after
+                      (insert (format "(confpkg-with-record '%S\n"
+                                      (list (concat "hook: " name) 'set-hooks))
+                              (if pre
+                                  (concat ";; Begin pre\n" pre "\n;; End pre\n")
+                                "")
+                              (format (if (symbolp after) ; If single feature.
+                                          "  (with-eval-after-load '%s\n"
+                                        "  (after! %s\n")
+                                      after))
+                    (when pre
+                      (insert "\n;; Begin pre (unnecesary since after is unused)\n"
+                              pre
+                              "\n;; End pre\n")))
+                  (insert
+                   (format "(confpkg-with-record '%S\n"
+                           (list (concat "load: " name)
+                                 (if after 'load-hooks 'config)))))
+                (goto-char (point-max))
+                (when (string-match-p ";" (thing-at-point 'line))
+                  (insert "\n"))
+                (insert ")")
+                (when (plist-get confpkg :after)
+                  (insert "))"))
+                (insert "\n"))
+              (buffer-string)))))
+       (let ((confpkg-timings ;; Ensure timings is put first.
+              (cl-some (lambda (p) (and (equal (plist-get p :package) "config-confpkg-timings") p))
+                       confpkg--list)))
+         (append (list confpkg-timings)
+                 (nreverse (remove confpkg-timings confpkg--list)))))
+      (insert "\n(confpkg-finish-record 'config)\n\n;;; config.el ends here")
+      (write-region nil nil "config.el" nil :silent))))
+
+;; Cleanup
+
+(defun confpkg-cleanup ()
+  (org-fold-core-ignore-fragility-checks
+    (org-babel-map-executables nil
+      (when (and (eq (org-element-type (org-element-context)) 'babel-call)
+                (equal (org-element-property :call (org-element-context)) "confpkg"))
+        (org-babel-remove-result)
+        (org-entry-delete nil "header-args:emacs-lisp")))))
+
+;; Finaliser
+
+(defun confpkg-tangle-finalise ()
+  (remove-hook 'org-babel-tangle-finished-hook #'confpkg-tangle-finalise)
+  (revert-buffer t t t)
+  (confpkg-comment-out-package-statements)
+  (confpkg-annotate-list-dependencies)
+  (confpkg-create-config)
+  (confpkg-write-dependencies)
+  (message "Processed %s elisp files" (length confpkg--list)))
+
+;; Clear old files
+
+(make-directory "subconf" t)
+(dolist (conf-file (directory-files "subconf" t "config-.*\\.el"))
+  (delete-file conf-file))
+
+(add-hook 'org-babel-tangle-finished-hook #'confpkg-tangle-finalise)
+#+end_src
+
+#+call: confpkg-setup[:results none]()
+
+***** Confpkg Dispatch
+
+#+name: confpkg
+#+begin_src emacs-lisp :var name="" needs="" after="" pre="" prefix="config-" via="copy" :results silent raw
+;; Babel block for use with #+call
+;; Arguments:
+;;  - name, the name of the config sub-package
+;;  - needs, (when non-empty) required system executable(s)
+;;  - after, required features
+;;  - pre, a noweb reference to code that should be executed eagerly,
+;;    and not deferred via after. The code is not included in the
+;;    generated .el file and should only be used in dire situations.
+;;  - prefix, the package prefix ("config-" by default)
+;;  - via, how this configuration should be included in config.el,
+;;    the current options are:
+;;    + "copy", copy the configuration lisp
+;;    + "require", insert a require statement
+;;    + "none", do not do anything to load this configuration.
+;;      This only makes sense when configuration is either being
+;;      temporarily disabled or loaded indirectly/elsewhere.
+(when (or (string-empty-p needs)
+          (cl-every #'executable-find (delq nil (split-string needs ","))))
+  (let* ((name (if (string-empty-p name)
+                   (save-excursion
+                     (and (org-back-to-heading-or-point-min t)
+                          (substring-no-properties
+                           (org-element-interpret-data
+                            (org-element-property :title (org-element-at-point))))))
+                 name))
+         (after
+          (cond
+           ((string-empty-p after) nil)
+           ((string-match-p "\\`[^()]+\\'" after)
+            (intern after)) ; Single feature.
+           (t after)))
+         (pre (and (not (string-empty-p pre)) pre))
+         (confpkg-name
+          (concat prefix (replace-regexp-in-string
+                          "[^a-z-]" "-" (downcase name))))
+         (confpkg-file (expand-file-name (concat confpkg-name ".el")
+                                         "subconf")))
+    (unless (file-exists-p confpkg-file)
+      (make-empty-file confpkg-file t))
+    (cl-incf confpkg--num)
+    (org-set-property
+     "header-args:emacs-lisp"
+     (format ":tangle no :noweb-ref %s" confpkg-name))
+    (push (list :name name
+                :package confpkg-name
+                :file confpkg-file
+                :after after
+                :pre pre
+                :via (intern via)
+                :package-statements nil)
+          confpkg--list)
+    (format-spec
+     "#+begin_src emacs-lisp :tangle %f :mkdirp yes :noweb no-export :noweb-ref none :comments no
+<<confpkg-template>>
+,#+end_src"
+     `((?n . ,confpkg--num)
+       (?p . ,confpkg-name)
+       (?f . ,confpkg-file)
+       (?Y . ,(format-time-string "%Y"))
+       (?B . ,(format-time-string "%B"))
+       (?m . ,(format-time-string "%m"))
+       (?d . ,(format-time-string "%d"))
+       (?M . ,(format-time-string "%M"))
+       (?S . ,(format-time-string "%S"))))))
+#+end_src
+
+#+name: confpkg-template
+#+begin_src emacs-lisp :eval no
+;;; %p.el --- Generated package (no.%n) from my config -*- lexical-binding: t; -*-
+;;
+;; Copyright (C) %Y Kiana Sheibani
+;;
+;; Author: Kiana Sheibani <kiana.a.sheibani@gmail.com>
+;; Created: %B %d, %Y
+;; Modified: %B %d, %Y
+;; Version: %Y.%m.%d
+;;
+;; This file is not part of GNU Emacs.
+;;
+;;; Commentary:
+;;
+;;  Generated package (no.%n) from my config.
+;;
+;;  This is liable to have unstated dependencies, and reply on other bits of
+;;  state from other configuration blocks. Only use this if you know /exactly/
+;;  what you are doing.
+;;
+;;  This may function nicely as a bit of self-contained functionality, or it
+;;  might be a horrid mix of functionalities and state.
+;;
+;;  Hopefully, in future static analysis will allow this to become more
+;;  properly package-like.
+;;
+;;; Code:
+
+<<%p>>
+
+(provide '%p)
+;;; %p.el ends here
+#+end_src
+
+***** Quieter Output
+
+#+name: confpkg-quieter-output
+#+begin_src emacs-lisp
+(when noninteractive
+  (unless (fboundp 'doom-shut-up-a)
+    (defun doom-shut-up-a (fn &rest args)
+      (let ((standard-output #'ignore)
+            (inhibit-message t))
+        (apply fn args))))
+  (advice-add 'org-babel-expand-body:emacs-lisp :around #'doom-shut-up-a)
+  ;; Quiet some other annoying messages
+  (advice-add 'sh-set-shell :around #'doom-shut-up-a)
+  (advice-add 'rng-what-schema :around #'doom-shut-up-a)
+  (advice-add 'python-indent-guess-indent-offset :around #'doom-shut-up-a))
+#+end_src
+
+#+call: confpkg-quieter-output()
+
+***** Timings
+
+#+call: confpkg("Confpkg timings")
+
+#+begin_src emacs-lisp
+(defvar confpkg-load-time-tree (list (list 'root)))
+(defvar confpkg-record-branch (list 'root))
+(defvar confpkg-record-num 0)
+
+(defun confpkg-create-record (name elapsed &optional parent enclosing)
+  (let ((parent (assoc (or parent (car confpkg-record-branch))
+                       confpkg-load-time-tree))
+        (record (cons name (list (list 'self
+                                       :name (format "%s" name)
+                                       :num (cl-incf confpkg-record-num)
+                                       :elapsed elapsed
+                                       :enclosing enclosing)))))
+    (push record confpkg-load-time-tree)
+    (push record (cdr parent))
+    record))
+
+(defun confpkg-start-record (name &optional parent)
+  (let ((record (confpkg-create-record name 0.0e+NaN parent t)))
+    (plist-put (cdadr record) :start (float-time))
+    (push name confpkg-record-branch)
+    record))
+
+(defun confpkg-finish-record (name)
+  (let ((self-record (cdar (last (cdr (assoc name confpkg-load-time-tree))))))
+    (plist-put self-record :elapsed
+               (- (float-time) (plist-get self-record :start) 0.0))
+    (unless (equal (car confpkg-record-branch) name)
+      (message "Warning: Confpkg timing record expected to finish %S, instead found %S. %S"
+               name (car confpkg-record-branch) confpkg-record-branch))
+    (setq confpkg-record-branch (cdr confpkg-record-branch))))
+
+(defmacro confpkg-with-record (name &rest body)
+  "Create a time record around BODY.
+The record must have a NAME."
+  (declare (indent 1))
+  (let ((name-val (make-symbol "name-val"))
+        (record-spec (make-symbol "record-spec")))
+    `(let* ((,name-val ,name)
+            (,record-spec (if (consp ,name-val) ,name-val (list ,name-val))))
+       (apply #'confpkg-start-record ,record-spec)
+       (unwind-protect
+           (progn ,@body)
+         (confpkg-finish-record (car ,record-spec))))))
+
+(defadvice! +require--log-timing-a (orig-fn feature &optional filename noerror)
+  :around #'require
+  (if (or (featurep feature)
+          (eq feature 'cus-start) ; HACK Why!?!
+          (assoc (format "require: %s" feature) confpkg-load-time-tree))
+      (funcall orig-fn feature filename noerror)
+    (confpkg-with-record (list (format "require: %s" feature)
+                               (and (eq (car confpkg-record-branch) 'root)
+                                    'requires))
+      (funcall orig-fn feature filename noerror))))
+
+(defun confpkg-timings-report (&optional sort-p node)
+  "Display a report on load-time information.
+Supply SORT-P (or the universal argument) to sort the results.
+NODE defaults to the root node."
+  (interactive
+   (list (and current-prefix-arg t)))
+  (let ((buf (get-buffer-create "*Confpkg Load Time Report*"))
+        (depth 0)
+        num-pad name-pad max-time max-total-time max-depth)
+    (cl-labels
+        ((sort-records-by-time
+          (record)
+          (let ((self (assoc 'self record)))
+            (append (list self)
+                    (sort (nreverse (remove self (cdr record)))
+                          (lambda (a b)
+                            (> (or (plist-get (alist-get 'self a) :total) 0.0)
+                               (or (plist-get (alist-get 'self b) :total) 0.0)))))))
+         (print-record
+          (record)
+          (cond
+           ((eq (car record) 'self)
+            (insert
+             (propertize
+              (string-pad (number-to-string (plist-get (cdr record) :num)) num-pad)
+              'face 'font-lock-keyword-face)
+             " "
+             (propertize
+              (apply #'concat
+                     (make-list (1- depth) "• "))
+              'face 'font-lock-comment-face)
+             (string-pad (format "%s" (plist-get (cdr record) :name)) name-pad)
+             (make-string (* (- max-depth depth) 2) ?\s)
+             (propertize
+              (format "%.4fs" (plist-get (cdr record) :elapsed))
+              'face
+              (list :foreground
+                    (doom-blend 'orange 'green
+                                (/ (plist-get (cdr record) :elapsed) max-time))))
+             (if (= (plist-get (cdr record) :elapsed)
+                    (plist-get (cdr record) :total))
+                 ""
+               (concat "   (Σ="
+                       (propertize
+                        (format "%.3fs" (plist-get (cdr record) :total))
+                        'face
+                        (list :foreground
+                              (doom-blend 'orange 'green
+                                          (/ (plist-get (cdr record) :total) max-total-time))))
+                       ")"))
+             "\n"))
+           (t
+            (cl-incf depth)
+            (mapc
+             #'print-record
+             (if sort-p
+                 (sort-records-by-time record)
+               (reverse (cdr record))))
+            (cl-decf depth))))
+         (flatten-records
+          (records)
+          (if (eq (car records) 'self)
+              (list records)
+            (mapcan
+             #'flatten-records
+             (reverse (cdr records)))))
+         (tree-depth
+          (records &optional depth)
+          (if (eq (car records) 'self)
+              (or depth 0)
+            (1+ (cl-reduce #'max (cdr records) :key #'tree-depth))))
+         (mapreduceprop
+          (list map reduce prop)
+          (cl-reduce
+           reduce list
+           :key
+           (lambda (p) (funcall map (plist-get (cdr p) prop)))))
+         (elaborate-timings
+          (record)
+          (if (eq (car record) 'self)
+              (plist-get (cdr record) :elapsed)
+            (let ((total (cl-reduce #'+ (cdr record)
+                                    :key #'elaborate-timings))
+                  (self (cdr (assoc 'self record))))
+              (if (plist-get self :enclosing)
+                  (prog1
+                      (plist-get self :elapsed)
+                    (plist-put self :total (plist-get self :elapsed))
+                    (plist-put self :elapsed
+                               (- (* 2 (plist-get self :elapsed)) total)))
+                (plist-put self :total total)
+                total))))
+         (elaborated-timings
+          (record)
+          (let ((record (copy-tree record)))
+            (elaborate-timings record)
+            record)))
+      (let* ((tree
+              (elaborated-timings
+               (append '(root)
+                       (copy-tree
+                        (alist-get (or node 'root)
+                                   confpkg-load-time-tree
+                                   nil nil #'equal))
+                       '((self :num 0 :elapsed 0)))))
+             (flat-records
+              (cl-remove-if
+               (lambda (rec) (= (plist-get (cdr rec) :num) 0))
+               (flatten-records tree))))
+        (setq max-time (mapreduceprop flat-records #'identity #'max :elapsed)
+              max-total-time (mapreduceprop flat-records #'identity #'max :total)
+              name-pad (mapreduceprop flat-records #'length #'max :name)
+              num-pad (mapreduceprop flat-records
+                                     (lambda (n) (length (number-to-string n)))
+                                     #'max :num)
+              max-depth (tree-depth tree))
+        (with-current-buffer buf
+          (erase-buffer)
+          (setq-local outline-regexp "[0-9]+ *\\(?:• \\)*")
+          (outline-minor-mode 1)
+          (use-local-map (make-sparse-keymap))
+          (local-set-key "TAB" #'outline-toggle-children)
+          (local-set-key "\t" #'outline-toggle-children)
+          (local-set-key (kbd "<backtab>") #'outline-show-subtree)
+          (local-set-key (kbd "C-<iso-lefttab>")
+                         (eval `(cmd! (if current-prefix-arg
+                                          (outline-show-all)
+                                        (outline-hide-sublevels (+ ,num-pad 2))))))
+          (insert
+           (propertize
+            (concat (string-pad "#" num-pad) " "
+                    (string-pad "Confpkg"
+                                (+ name-pad (* 2 max-depth) -3))
+                    (format " Load Time (Σ=%.3fs)\n"
+                            (plist-get (cdr (assoc 'self tree)) :total)))
+            'face '(:inherit (tab-bar-tab bold) :extend t :underline t)))
+          (dolist (record (if sort-p
+                              (sort-records-by-time tree)
+                            (reverse (cdr tree))))
+            (unless (eq (car record) 'self)
+              (print-record record)))
+          (set-buffer-modified-p nil)
+          (goto-char (point-min)))
+        (pop-to-buffer buf)))))
+#+end_src
+
+# CLI
+
+#+begin_src emacs-lisp :tangle cli.el :noweb-ref none
+;;; cli.el -*- lexical-binding: t; -*-
+(setq org-confirm-babel-evaluate nil)
+
+(defun doom-shut-up-a (orig-fn &rest args)
+  (quiet! (apply orig-fn args)))
+
+(advice-add 'org-babel-execute-src-block :around #'doom-shut-up-a)
+#+end_src
+
+* Doom Modules
+
+One of Doom Emacs's most useful features is its modular configuration system,
+allowing configuration code to be sectioned into modules that can be enabled or
+customized individually. Doom provides a full suite of pre-written modules to
+enable.
+
+#+begin_src emacs-lisp :tangle init.el :noweb no-export :noweb-ref none
+;;; init.el -*- lexical-binding: t; -*-
+
+;; This file controls what Doom modules are enabled and what order they load in.
+
+(doom! <<doom-input>>
+
+       <<doom-completion>>
+
+       <<doom-ui>>
+
+       <<doom-editor>>
+
+       <<doom-emacs>>
+
+       <<doom-term>>
+
+       <<doom-checkers>>
+
+       <<doom-tools>>
+
+       <<doom-os>>
+
+       <<doom-lang>>
+
+       <<doom-email>>
+
+       <<doom-app>>
+
+       <<doom-config>>
+       )
+#+end_src
+
+** Config Modules
+
+Considering this is a literate config, the corresponding ~:config literate~ module
+is necessary. We'll also turn on some of the default config options too.
+
+#+name: doom-config
+#+begin_src emacs-lisp
+:config
+literate
+(default +bindings +smartparens)
+#+end_src
+
+** Completion
+
+I'm a big fan of the Vertico ecosystem, as it's lightweight and easy to use.
+Let's turn on that module, along with the icons flag because why not.
+
+#+name: doom-completion
+#+begin_src emacs-lisp
+:completion
+(vertico +icons)
+(company +childframe)
+#+end_src
+
+** Checkers
+
+The two most common syntax checking engines seem to be =flymake= and =flycheck=.
+=flymake= is built in to Emacs, is generally faster and currently has better
+support in the ecosystem, so let's use that one.
+
+We'll also enable a dedicated spell checking module using ~aspell~, as that seems
+to be the recommended option.
+
+#+name: doom-checkers
+#+begin_src emacs-lisp
+:checkers
+(syntax +flymake +childframe)
+(spell +aspell)
+;;grammar
+#+end_src
+
+** UI
+
+Most of these are either defaults that come with Doom Emacs or just recommended,
+but here are the highlights:
+
+- ~vi-tilde-fringe~ because I like how it looks
+- ~(window-select +numbers)~ because multiple windows are too inconvenient without
+  an easy way to switch between them
+- ~file-templates~ and ~snippets~ because typing is hard
+- ~(format +onsave)~ because I don't want to have to remember to run a formatter
+- ~direnv~ because I'm a nix user
+- Icons!
+
+#+name: doom-ui
+#+begin_src emacs-lisp
+:ui
+deft
+doom
+doom-dashboard
+;;doom-quit
+;;(emoji +unicode)
+hl-todo
+;;hydra
+indent-guides
+;;ligatures
+;;minimap
+modeline
+;;nav-flash
+;;neotree
+ophints
+(popup +all +defaults)
+;;tabs
+(treemacs +lsp)
+unicode
+(vc-gutter +diff-hl +pretty)
+vi-tilde-fringe
+(window-select +numbers)
+workspaces
+;;zen
+#+end_src
+
+#+name: doom-editor
+#+begin_src emacs-lisp
+:editor
+(evil +everywhere)
+file-templates
+fold
+(format +onsave)
+;;god
+;;lispy
+;;multiple-cursors
+;;objed
+;;parinfer
+;;rotate-text
+snippets
+;;word-wrap
+#+end_src
+
+#+name: doom-tools
+#+begin_src emacs-lisp
+:tools
+;;ansible
+biblio
+;;debugger
+direnv
+;;docker
+;;editorconfig
+;;ein
+(eval +overlay)
+;;gist
+(lookup +docsets)
+lsp
+magit
+make
+;;pass
+pdf
+;;prodigy
+;;rgb
+;;taskrunner
+;;terraform
+tree-sitter
+;;tmux
+;;upload
+#+end_src
+
+#+name: doom-emacs
+#+begin_src emacs-lisp
+:emacs
+(dired +icons)
+electric
+(ibuffer +icons)
+(undo +tree)
+vc
+#+end_src
+
+#+name: doom-os
+#+begin_src emacs-lisp
+:os
+(:if IS-MAC macos)
+tty
+#+end_src
+
+** Apps
+
+Who doesn't love doing everything in Emacs?
+
+#+name: doom-term
+#+begin_src emacs-lisp
+:term
+vterm
+#+end_src
+
+#+name: doom-email
+#+begin_src emacs-lisp
+:email
+(mu4e +org +gmail)
+#+end_src
+
+#+name: doom-app
+#+begin_src emacs-lisp
+:app
+calendar
+;;emms
+everywhere
+;;irc
+;;(rss +org)   ; One day...
+;;twitter
+#+end_src
+
+
+** Language Modules
+
+Doom Emacs provides a large collection of modules for different languages. Which
+is good, because setting up language mode packages is kind of annoying.
+
+#+name: doom-lang
+#+begin_src emacs-lisp
+:lang
+(agda +tree-sitter +local)
+;;beancount
+;;(cc +lsp)
+;;clojure
+;;common-lisp
+;;coq
+;;crystal
+;;csharp
+data
+;;(dart +flutter)
+dhall
+;;elixir
+;;elm
+emacs-lisp
+;;erlang
+;;ess
+;;factor
+;;faust
+;;fortran
+;;fsharp
+;;fstar
+;;gdscript
+;;(go +lsp)
+;;(graphql +lsp)
+(haskell +lsp)
+;;hy
+idris
+;;json
+;;(java +lsp)
+;;javascript
+;;julia
+;;kotlin
+(latex +lsp)
+;;lean
+;;ledger
+;;lua
+markdown
+;;nim
+(nix +tree-sitter)
+;;ocaml
+(org +pretty +roam2
+    +gnuplot +jupyter
+    +pandoc +journal
+    +present)
+;;php
+;;plantuml
+;;purescript
+(python +lsp +tree-sitter)
+;;qt
+;;racket
+;;raku
+;;rest
+;;rst
+;;(ruby +rails)
+(rust +lsp +tree-sitter)
+(scala +lsp +tree-sitter)
+;;(scheme +guile)
+(sh +fish +lsp +tree-sitter)
+;;sml
+;;solidity
+;;swift
+;;terra
+(web +lsp +tree-sitter)
+yaml
+;;zig
+#+end_src
+
+* Basic Configuration
+
+This is mostly config settings that don't belong to any particular package and
+aren't important enough to get their own major section.
+
+** Sensible Settings
+
+#+call: confpkg("Settings")
+
+It wouldn't be Emacs if there wasn't an endless list of config variables to
+change every aspect of its function!
+
+#+begin_src emacs-lisp
+(setq-default tab-width 2                      ; 2 width tabs
+              delete-by-moving-to-trash t      ; Delete files to trash
+              window-combination-resize t      ; Resize windows more evenly
+              )
+
+(setq compile-command "nix build"
+      truncate-string-ellipsis "…"             ; Unicode!
+      shell-file-name (executable-find "bash") ; Use bash instead of fish for default shell
+      disabled-command-function nil            ; Disabled commands are a stupid idea
+      password-cache-expiry nil                ; Security? Never heard of it
+      scroll-margin 2                          ; A few extra lines on each end of the window
+      )
+
+(global-subword-mode 1) ; Trying this out
+#+end_src
+
+Thanks once again to Tecosaur for some of these settings.
+
+** Personal Information
+
+#+call: confpkg()
+
+Emacs uses this basic personal information for a few different things, mostly
+applications.
+
+#+begin_src emacs-lisp
+(setq user-full-name "Kiana Sheibani"
+      user-mail-address "kiana.a.sheibani@gmail.com")
+#+end_src
+
+** Aesthetics
+
+#+call: confpkg("Visual")
+
+My favorite color theme has always been Tokyo Night. I use it literally
+everywhere I can, and Doom Emacs is no exception.
+
+#+begin_src emacs-lisp
+(setq doom-theme 'doom-tokyo-night)
+#+end_src
+
+As for font choice, Victor Mono is my preferred coding font. I also use Source
+Sans Pro as my sans-serif font, though that is more out of obligation than
+actually liking how it looks.
+
+#+begin_src emacs-lisp
+(setq doom-font (font-spec :family "VictorMono" :size 13)
+      doom-variable-pitch-font (font-spec :family "Source Sans Pro" :size 16))
+#+end_src
+
+I'm a very big fan of how italics look in this font, so let's make more things
+italicized! While we're here, we'll also set doom's modified buffer font to be
+red instead of yellow (I like how it looks better).
+
+#+begin_src emacs-lisp
+(custom-set-faces!
+  '(font-lock-comment-face :slant italic)
+  '(font-lock-variable-name-face :slant italic)
+  '(doom-modeline-buffer-modified :weight bold :inherit (doom-modeline error)))
+#+end_src
+
+Some other small aesthetic changes:
+
+#+begin_src emacs-lisp
+(setq nerd-icons-scale-factor 1.1     ; Make icons slightly larger
+      doom-modeline-height 24         ; Make Doom's modeline taller
+      display-line-numbers-type t)    ; Line numbers (absolute)
+#+end_src
+
+** Bindings
+
+#+call: confpkg()
+
+*** Windows & Workspaces
+
+I like using window numbers to navigate between splitscreen windows, but having
+to type =SPC w <#>= every time is annoying. Let's shorten that key sequence by
+67%, and also throw in a convenient binding for switching to =treemacs=.
+
+#+begin_src emacs-lisp
+(map! :leader
+      ;; Bind "SPC 0" to treemacs
+      ;; Map window bindings to "SPC 1" through "SPC 9"
+      "w 0" #'treemacs-select-window
+      :desc "Select project tree window" "0" #'treemacs-select-window
+      :desc "Select window 1" "1" #'winum-select-window-1
+      :desc "Select window 2" "2" #'winum-select-window-2
+      :desc "Select window 3" "3" #'winum-select-window-3
+      :desc "Select window 4" "4" #'winum-select-window-4
+      :desc "Select window 5" "5" #'winum-select-window-5
+      :desc "Select window 6" "6" #'winum-select-window-6
+      :desc "Select window 7" "7" #'winum-select-window-7
+      :desc "Select window 8" "8" #'winum-select-window-8
+      :desc "Select window 9" "9" #'winum-select-window-9)
+#+end_src
+
+Now =SPC 1= will work equivalently to =SPC w 1=. Efficiency!
+
+I like to reorganize my workspaces, so we can also add bindings to change the
+workspace order.
+
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Move workspace left"
+      "TAB h" #'+workspace/swap-left
+      :desc "Move workspace right"
+      "TAB l" #'+workspace/swap-right)
+#+end_src
+
+*** Leader Key
+
+It's sometimes useful to have a ~universal-argument~ binding that doesn't go
+through the leader key.
+
+#+begin_src emacs-lisp
+(map! :map global-map
+      "M-u" #'universal-argument)
+#+end_src
+
+It's also sometimes useful to have an ~evil-ex~ binding that /does/ go through the
+leader key.
+
+#+begin_src emacs-lisp
+(map! :leader
+      "w :" nil
+      ":" #'evil-ex)
+#+end_src
+
+*** Evil Macros
+
+Seeing as it's practically the Evil Emacs version of =C-g=, I often end up
+accidentally pressing =q= in a non-popup buffer, which starts recording a macro.
+That's very annoying, and I don't use macros enough to justify that annoyance.
+
+#+begin_src emacs-lisp
+(map! :map evil-normal-state-map
+      "q" nil
+      "C-q" #'evil-record-macro)
+#+end_src
+
+*** Creating New Projects
+
+Whenever I want to make a new project, having to create a new directory,
+initialize Git, and register it with Projectile is cumbersome. A new command to
+do all of those steps in one go sounds like a good idea.
+
+#+begin_src emacs-lisp
+(defun create-new-project (dir type &optional parents)
+  "Create a new directory DIR and add it to the list of known projects.
+
+TYPE specifies the type of project to create. It can take the following values:
+- `git', which creates a new Git repository.
+- `projectile', which creates a .projectile file in the project root.
+- A string, which is used as a filename to create in the project root.
+- A function, which is called with no arguments inside the root of the project.
+
+If PARENTS is non-nil, the parents of the specified directory will also be created."
+  (interactive (list (read-directory-name "Create new project: ") 'git t))
+  (make-directory dir parents)
+  (let ((default-directory dir))
+    (pcase type
+      ('git
+       (shell-command "git init"))
+      ('projectile
+       (make-empty-file ".projectile"))
+      ((pred stringp)
+       (make-empty-file type))
+      ((pred functionp)
+       (funcall type))))
+  (projectile-add-known-project dir))
+
+(map! :leader
+      :desc "Create new project"
+      "p n" #'create-new-project)
+
+#+end_src
+
+*** Misc.
+
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Open URL"
+      "s u" #'goto-address-at-point)
+#+end_src
+
+*** ... This is Also Here
+
+I'm not even going to bother explaining this one. Emacs is just janky sometimes
+lol
+
+#+begin_src emacs-lisp
+(defadvice! ~/projectile-find-file (invalidate-cache &optional ff-variant)
+  :override #'projectile--find-file
+  (projectile-maybe-invalidate-cache invalidate-cache)
+  (let* ((project-root (projectile-acquire-root))
+         (file (read-file-name "Find file: " project-root project-root
+                               (confirm-nonexistent-file-or-buffer) nil
+                               ))
+         (ff (or ff-variant #'find-file)))
+    (when file
+      (funcall ff (expand-file-name file project-root))
+      (run-hooks 'projectile-find-file-hook))))
+#+end_src
+
+* Packages
+
+Now that we've enabled our preferred modules and done some basic configuration,
+we can install and configure our packages.
+
+Our ~package!~ declarations go in ~packages.el~, which must not be byte-compiled:
+
+#+begin_src emacs-lisp :tangle packages.el
+;; -*- no-byte-compile: t; -*-
+#+end_src
+
+Everything else goes in ~config.el~, which is managed by [[*=confpkg=][confpkg]] as outlined
+earlier.
+
+** Company
+
+#+call: confpkg("!Pkg company")
+
+*** TODO Optimization
+
+*** Bindings
+
+When Company is active, its keybindings overshadow the default ones, meaning
+keys like =RET= no longer work. To prevent this from happening, let's rebind
+~company-complete-selection~ to =TAB= (less useful in the middle of typing), and
+only allow =RET= to be used if Company has been explicitly interacted with.
+
+#+begin_src emacs-lisp
+(after! company
+  (let ((item `(menu-item nil company-complete-selection
+                :filter ,(lambda (cmd)
+                           (when (company-explicit-action-p)
+                             cmd)))))
+    (map! :map company-active-map
+          "RET" item
+          "<return>" item
+          "TAB" #'company-complete-selection
+          "<tab>" #'company-complete-selection
+          "S-TAB" #'company-complete-common)))
+#+end_src
+
+*** Spell Correction
+
+I've been having problems with ~company-ispell~, mainly due to Ispell requiring a
+text-based dictionary (unlike Aspell, which uses a binary dictionary). So let's
+switch to ~company-spell~:
+
+#+begin_src emacs-lisp :tangle packages.el
+(package! company-spell)
+#+end_src
+
+#+begin_src emacs-lisp
+(after! company-spell
+  (map! :map evil-insert-state-map
+        "C-x s" #'company-spell))
+#+end_src
+
+We should make sure that ~company-spell~ uses Ispell's personal dictionary too:
+
+#+begin_src emacs-lisp
+(after! (company-spell ispell)
+  (setq company-spell-args
+        (concat company-spell-args " -p " ispell-personal-dictionary)))
+#+end_src
+
+*** Icons
+
+The ~company-box~ front-end adds support for icons, but there aren't many
+providers for them, especially in text. We'll add two new icon providers:
+
+- ~~/company-box-icons--text~, which directly targets the output of ~company-spell~
+- ~~/company-box-icons--spell~, which is a fallback for all text completions
+
+#+begin_src emacs-lisp
+;; Mark candidates from `company-spell' using a text property
+(defadvice! ~/company-spell-text-property (words)
+  :filter-return #'company-spell-lookup-words
+  (dolist (word words)
+    (put-text-property 0 1 'spell-completion-item t word))
+  words)
+
+(defun ~/company-box-icons--spell (candidate)
+  (when (get-text-property 0 'spell-completion-item candidate)
+    'Text))
+
+(defun ~/company-box-icons--text (candidate)
+  (when (derived-mode-p 'text-mode) 'Text))
+
+(after! company-box
+  (pushnew! company-box-icons-functions #'~/company-box-icons--text)
+  ;; `~/company-box-icons--text' is a fallback, so it has to go at the end of
+  ;; the list
+  (setq company-box-icons-functions
+        (append company-box-icons-functions '(~/company-box-icons--text))))
+#+end_src
+
+** Eldoc
+
+#+call: confpkg("!Pkg eldoc")
+
+We'll switch the default docstring handler to ~eldoc-documentation-compose~, since
+that provides the most information and I don't mind the space it takes up.
+
+#+begin_src emacs-lisp
+(after! eldoc
+  (setq eldoc-documentation-strategy 'eldoc-documentation-compose))
+#+end_src
+
+** Embark
+
+#+call: confpkg("!Pkg embark")
+
+When I first learned about Embark and began to use it, I was a bit disappointed
+by its defaults, especially since Doom Emacs is normally great when it comes to
+ensuring good defaults. I eventually went ahead and looked through every aspect
+of Embark to see what needed to change.
+
+*** Targets
+
+Some of the targeting functions are a bit too general in what they accept. We'll
+adjust the expression and identifier targeters to only work in ~prog-mode~ and the
+"defun" targeter to only work in Emacs Lisp code.
+
+We'll also define a word targeter, since that was previously handled by the
+identifier one.
+
+#+begin_src emacs-lisp
+(defun ~/embark-target-prog-mode (old-fn)
+  "Advise an embark target to only activate in `prog-mode'."
+  (when (derived-mode-p 'prog-mode) (funcall old-fn)))
+
+(defun ~/embark-target-identifier (old-fn)
+  "Advise an embark target to only activate in `prog-mode' and not in `lsp-mode'."
+  (when (and (derived-mode-p 'prog-mode) (not (bound-and-true-p lsp-mode))) (funcall old-fn)))
+
+(advice-add #'embark-target-expression-at-point :around #'~/embark-target-prog-mode)
+(advice-add #'embark-target-identifier-at-point :around #'~/embark-target-identifier)
+
+(after! embark
+  (embark-define-thingatpt-target defun emacs-lisp-mode)
+
+  ; Word targeter
+  (embark-define-thingatpt-target word
+    text-mode help-mode Info-mode man-common)
+  (pushnew! embark-target-finders #'embark-target-word-at-point))
+#+end_src
+
+*** LSP Integration
+
+The provided action types related to programming only apply to Emacs Lisp code,
+so we'll add a new one that integrates with LSP.
+
+#+begin_src emacs-lisp
+(defun embark-target-lsp-symbol-at-point ()
+  "Target the LSP symbol at point."
+  (when (bound-and-true-p lsp-mode)
+    (require 'lsp-ui-doc)
+    ;; Use hover request (meant for highlighting) to get the current symbol
+    (when-let ((bounds (lsp-ui-doc--extract-bounds
+                        (lsp-request "textDocument/hover"
+                                     (lsp--text-document-position-params)))))
+      (cons 'lsp-symbol
+            (cons (buffer-substring (car bounds) (cdr bounds))
+                  bounds)))))
+
+(after! embark
+  (pushnew! embark-target-finders #'embark-target-lsp-symbol-at-point))
+#+end_src
+
+*** Hooks
+
+The hook ~embark--mark-target~ normally sets the mark to the end and puts the
+point at the beginning. This is the opposite of the usual order, so let's
+override it to flip the order.
+
+#+begin_src emacs-lisp
+(after! embark
+  (cl-defun embark--mark-target (&rest rest &key run bounds &allow-other-keys)
+    "Mark the target if its BOUNDS are known.
+After marking the target, call RUN with the REST of its arguments."
+    (cond
+     ((and bounds run)
+      (save-mark-and-excursion
+        (set-mark (car bounds))
+        (goto-char (cdr bounds))
+        (apply run :bounds bounds rest)))
+     (bounds ;; used as pre- or post-action hook
+      (set-mark (car bounds))
+      (goto-char (cdr bounds)))
+     (run (apply run rest)))))
+#+end_src
+
+*** Actions
+
+This
+
+We'll be using a lot of new actions, so let's set their hooks.
+
+#+begin_src emacs-lisp
+(after! embark
+  (cl-pushnew #'embark--mark-target
+              (alist-get #'evil-change embark-around-action-hooks))
+  (cl-pushnew #'embark--mark-target
+              (alist-get #'+eval:region embark-around-action-hooks))
+  (cl-pushnew #'embark--mark-target
+              (alist-get #'+eval:replace-region embark-around-action-hooks))
+
+  (cl-pushnew #'embark--beginning-of-target
+              (alist-get #'backward-word embark-pre-action-hooks))
+  (cl-pushnew #'embark--end-of-target
+              (alist-get #'forward-word embark-pre-action-hooks))
+
+  (cl-pushnew #'embark--ignore-target
+              (alist-get #'lsp-rename embark-target-injection-hooks))
+  (cl-pushnew #'embark--ignore-target
+              (alist-get #'+spell/correct embark-target-injection-hooks))
+
+  (cl-pushnew #'embark--universal-argument
+              (alist-get #'+workspace/delete embark-pre-action-hooks))
+  (cl-pushnew #'embark--restart
+              (alist-get #'+workspace/delete embark-post-action-hooks))
+  (cl-pushnew #'embark--restart
+              (alist-get #'projectile-remove-known-project embark-post-action-hooks))
+
+  ; Actions that retrigger Embark
+  (pushnew! embark-repeat-actions
+            #'lsp-ui-find-next-reference
+            #'lsp-ui-find-prev-reference
+            #'forward-word
+            #'backward-word
+            #'org-table-next-row
+            #'+org/table-previous-row
+            #'org-table-next-field
+            #'org-table-previous-field)
+
+  ; Don't require confirmation on these actions
+  (setf (alist-get #'kill-buffer embark-pre-action-hooks nil t) nil
+        (alist-get #'embark-kill-buffer-and-window embark-pre-action-hooks nil t) nil
+        (alist-get #'bookmark-delete embark-pre-action-hooks nil t) nil
+        (alist-get #'tab-bar-close-tab-by-name embark-pre-action-hooks nil t) nil))
+#+end_src
+
+*** Keymaps
+
+Here's the big one.
+
+#+begin_src emacs-lisp
+(defmacro ~/embark-target-wrapper (fn prompt)
+  "Wrap the command FN to take its argument interactively."
+  (let ((fsym (make-symbol (symbol-name fn))))
+  ;;; Love me some uninterned symbols
+    `(progn
+       (defun ,fsym (ident &optional arg)
+         ,(documentation fn)
+         (interactive (list (read-from-minibuffer ,prompt) current-prefix-arg))
+         (,fn ident arg))
+       #',fsym)))
+
+(after! embark
+  (defvar-keymap embark-word-map
+    :doc "Keymap for Embark word actions."
+    :parent embark-general-map
+    "j" #'forward-word
+    "k" #'backward-word
+    "$" #'+spell/correct)
+  (defvar-keymap embark-lsp-symbol-map
+    :doc "Keymap for Embark LSP symbol actions."
+    :parent embark-identifier-map
+    "j" #'lsp-ui-find-next-reference
+    "k" #'lsp-ui-find-prev-reference
+    "r" #'lsp-rename)
+  (defvar-keymap embark-workspace-map
+    :doc "Keymap for Embark workspace actions."
+    :parent embark-general-map
+    "RET" #'+workspace/switch-to
+    "d" #'+workspace/delete)
+  (defvar-keymap embark-known-project-map
+    :doc "Keymap for Embark known project actions."
+    :parent embark-file-map
+    "RET" #'projectile-switch-project
+    "d" #'projectile-remove-known-project)
+
+  (pushnew! embark-keymap-alist
+            '(word . embark-word-map)
+            '(lsp-symbol . embark-lsp-symbol-map)
+            '(workspace . embark-workspace-map)
+            '(known-project . embark-known-project-map))
+
+  (map! (:map embark-general-map
+              "SPC" #'doom/leader
+              "C-SPC" #'embark-select
+              "X" #'embark-export
+              "W" #'+vertico/embark-export-write
+              "y" #'embark-copy-as-kill
+              "v" #'mark
+              "C-q" #'embark-toggle-quit
+              "d" #'kill-region
+              "c" #'evil-change
+              "/" #'evil-ex-search-forward
+              "?" #'evil-ex-search-backward
+              "E" nil "w" nil "q" nil "C-s" nil "C-r" nil)
+        (:map embark-heading-map
+              "v" #'mark
+              "V" #'outline-mark-subtree
+              "j" #'outline-next-visible-heading
+              "k" #'outline-previous-visible-heading
+              "J" #'outline-forward-same-level
+              "K" #'outline-backward-same-level
+              "h" #'outline-up-heading
+              "M-j" #'outline-move-subtree-down
+              "M-k" #'outline-move-subtree-up
+              "M-l" #'outline-demote
+              "M-h" #'outline-promote
+              "n" nil "p" nil "f" nil "b" nil "^" nil
+              "u" nil "C-SPC" nil)
+        (:map embark-prose-map
+              "c" #'evil-change
+              "u" #'downcase-region
+              "U" #'upcase-region
+              "q" #'fill-region
+              "C" #'capitalize-region
+              "l" nil "f" nil)
+        (:map embark-sentence-map
+              "j" #'forward-sentence
+              "k" #'backward-sentence
+              "n" nil "p" nil)
+        (:map embark-paragraph-map
+              "j" #'forward-paragraph
+              "k" #'backward-paragraph
+              "n" nil "p" nil)
+        (:map embark-identifier-map
+              "j" #'embark-next-symbol
+              "k" #'embark-previous-symbol
+              "d" #'kill-region
+              "RET" (~/embark-target-wrapper +lookup/definition "Identifier: ")
+              "K" (~/embark-target-wrapper +lookup/documentation "Identifier: ")
+              "D" (~/embark-target-wrapper +lookup/definition "Identifier: ")
+              "R" (~/embark-target-wrapper +lookup/references "Identifier: ")
+              "n" nil "p" nil "r" nil "a" nil "o" nil "H" nil "$" nil)
+        (:map embark-expression-map
+              "j" #'forward-list
+              "k" #'backward-list
+              "h" #'backward-up-list
+              "=" #'indent-region
+              "RET" #'+eval:region
+              "e" #'+eval:region
+              "E" #'+eval:replace-region
+              "TAB" nil "<" nil "u" nil "n" nil "p" nil)
+        (:map embark-defun-map
+              "c" #'evil-change
+              "C" #'compile-defun
+              "RET" nil "e" nil)
+        (:map embark-symbol-map
+              "s" nil "h" nil "d" nil "e" nil)
+        (:map embark-variable-map
+              "Y" #'embark-save-variable-value
+              "K" #'helpful-variable
+              "RET" #'+eval:region
+              "e" #'+eval:region
+              "E" #'+eval:replace-region
+              "i" #'embark-insert-variable-value
+              "v" #'mark
+              "c" #'evil-change
+              "<" nil)
+        (:map embark-function-map
+              "e" #'debug-on-entry
+              "E" #'cancel-debug-on-entry
+              "j" #'embark-next-symbol
+              "k" #'embark-previous-symbol
+              "K" #'helpful-callable)
+        (:map embark-command-map
+              "w" #'where-is
+              "b" nil "g" nil "l" nil)
+        (:map embark-package-map
+              "Y" #'embark-save-package-url
+              "i" #'embark-insert
+              "a" nil "I" nil "d" nil "r" nil "W" nil)
+        (:map embark-unicode-name-map
+              "Y" #'embark-save-unicode-character
+              "W" nil)
+        (:map embark-flymake-map
+              "j" #'flymake-goto-next-error
+              "k" #'flymake-goto-prev-error
+              "n" nil "p" nil)
+        (:map embark-tab-map
+              "d" #'tab-bar-close-tab-by-name)
+        (:map embark-region-map
+              "u" #'downcase-region
+              "U" #'upcase-region
+              "C" #'capitalize-region
+              "w" #'write-region
+              "W" #'count-words-region
+              "q" #'fill-region
+              "Q" #'fill-region-as-paragraph
+              "N" #'narrow-to-region
+              "D" #'delete-duplicate-lines
+              "=" #'indent-region
+              "g" #'vc-region-history
+              "d" #'kill-region
+              "c" #'evil-change
+              "TAB" nil "n" nil "l" nil "f" nil "p" nil
+              "*" nil ":" nil "_" nil)
+        (:map embark-file-map
+              "g" 'embark-vc-file-map
+              "w" #'embark-save-relative-path
+              "W" #'+vertico/embark-export-write
+              "Y" #'copy-file
+              "v" #'mark
+              "c" #'evil-change)
+        (:map embark-become-file+buffer-map
+              "." #'find-file
+              "b" #'+vertico/switch-workspace-buffer
+              "B" #'consult-buffer
+              "p" #'projectile--find-file)
+        (:map embark-become-help-map
+              "b" #'embark-bindings
+              "v" #'helpful-variable
+              "f" #'helpful-callable
+              "F" #'describe-face
+              "o" #'helpful-symbol
+              "s" #'helpful-symbol
+              "p" #'doom/help-packages)))
+
+(after! embark-org
+  (map! (:map embark-org-table-cell-map
+              "RET" #'+org/dwim-at-point
+              "v" #'mark
+              "-" #'org-table-insert-hline
+              "l" #'org-table-next-field
+              "h" #'org-table-previous-field
+              "j" #'org-table-next-row
+              "k" #'+org/table-previous-row
+              "H" #'org-table-move-column-left
+              "L" #'org-table-move-column-right
+              "J" #'org-table-move-row-down
+              "K" #'org-table-move-row-up
+              (:prefix ("i" . "insert")
+                       "h" #'+org/table-insert-column-left
+                       "l" #'org-table-insert-column
+                       "j" #'+org/table-insert-row-below
+                       "k" #'org-table-insert-row
+                       "-" #'org-table-insert-hline)
+              "^" nil "<" nil ">" nil "o" nil "O" nil)
+        (:map embark-org-table-map
+              "p" #'org-table-paste-rectangle
+              "C" #'org-table-convert
+              "D" #'org-table-toggle-formula-debugger
+              "y" #'embark-copy-as-kill
+              "d" #'kill-region
+              "c" #'evil-change)
+        (:map embark-org-link-copy-map
+              "y" #'embark-org-copy-link-in-full
+              "w" nil)
+        (:map embark-org-link-map
+              "e" #'org-insert-link
+              "y" 'embark-org-link-copy-map
+              "w" nil)
+        (:map embark-org-heading-map
+              ">" #'org-do-demote
+              "<" #'org-do-promote
+              "j" #'org-next-visible-heading
+              "k" #'org-previous-visible-heading
+              "J" #'org-forward-heading-same-level
+              "K" #'org-backward-heading-same-level
+              "q" #'org-set-tags-command
+              "o" #'org-set-property
+              "D" #'org-cut-subtree
+              "s" #'org-sort
+              "S" #'embark-collect
+              "i" #'embark-insert
+              "d" #'kill-region
+              "I" #'org-insert-heading-respect-content
+              "l" #'org-store-link
+              "L" #'embark-live
+              (:prefix ("t" . "time")
+                       "d" #'org-deadline
+                       "s" #'org-schedule)
+              (:prefix ("c" . "clock")
+                       "i" #'org-clock-in
+                       "o" #'org-clock-out))
+        (:map embark-org-src-block-map
+              "v" #'org-babel-mark-block
+              "y" #'embark-org-copy-block-contents
+              "Y" #'embark-copy-as-kill
+              "D" #'org-babel-remove-result-one-or-many
+              "j" #'org-babel-next-src-block
+              "k" #'org-babel-previous-src-block
+              "e" #'org-edit-special
+              "=" #'org-indent-block
+              "c" #'evil-change)
+        (:map embark-org-inline-src-block-map
+              "e" #'org-edit-inline-src-code
+              "D" #'org-babel-remove-inline-result
+              "k" nil)
+        (:map embark-org-babel-call-map
+              "D" #'org-babel-remove-result
+              "k" nil)
+        (:map embark-org-item-map
+              "j" #'org-next-item
+              "k" #'org-previous-item
+              "M-j" #'org-move-item-down
+              "M-k" #'org-move-item-up
+              "c" #'evil-change
+              "n" nil "p" nil)
+        (:map embark-org-plain-list-map
+              "c" #'evil-change
+              "C" #'org-toggle-checkbox)
+        (:map embark-org-agenda-item-map
+              "RET" #'org-agenda-switch-to
+              "TAB" #'org-agenda-goto
+              "j" #'org-agenda-next-item
+              "k" #'org-agenda-previous-item
+              "d" #'org-agenda-kill
+              "q" #'org-agenda-set-tags
+              "o" #'org-agenda-set-property
+              (:prefix ("t" . "time")
+                       "d" #'org-agenda-deadline
+                       "s" #'org-agenda-schedule)
+              (:prefix ("c" . "clock")
+                       "i" #'org-agenda-clock-in
+                       "o" #'org-agenda-clock-out)
+              "u" nil "i" nil ":" nil "s" nil "P" nil)))
+#+end_src
+
+** Evil
+
+#+call: confpkg("!Pkg evil")
+
+#+begin_src emacs-lisp
+(after! evil
+  (setq evil-shift-width 2             ; 2 width tabs (again)
+        evil-want-fine-undo t          ; More fine-grained undos
+        evil-ex-substitute-global t    ; s/../../ is global by default
+        evil-kill-on-visual-paste nil  ; Don't copy text overwritten on paste
+  ))
+#+end_src
+
+While we're here, we'll also set my preferred =evil-escape= keys:
+
+#+begin_src emacs-lisp
+(after! evil-escape
+  (setq evil-escape-key-sequence "fd"))
+#+end_src
+
+** Flymake
+
+#+call: confpkg("!Pkg flymake")
+
+I really like Flycheck's double-arrow fringe indicator, so let's quickly steal
+that:
+
+#+begin_src emacs-lisp
+(after! flymake
+  (define-fringe-bitmap 'flymake-double-left-arrow
+    [#b00011011
+     #b00110110
+     #b01101100
+     #b11011000
+     #b01101100
+     #b00110110
+     #b00011011])
+  (setf (car flymake-error-bitmap) 'flymake-double-left-arrow
+        (car flymake-warning-bitmap) 'flymake-double-left-arrow
+        (car flymake-note-bitmap) 'flymake-double-left-arrow))
+#+end_src
+
+Flymake normally uses italics for warnings, but my italics font being cursive
+makes that a bit too visually noisy.
+
+#+begin_src emacs-lisp
+(custom-set-faces!
+  '(compilation-warning :slant normal :weight bold)
+  '(flymake-note-echo :underline nil :inherit compilation-info))
+#+end_src
+
+And just to make sure nothing else accidentally starts running:
+
+#+begin_src emacs-lisp :tangle packages.el
+(package! flycheck :disable t)
+(package! flyspell :disable t)
+#+end_src
+
+*** Tooltips
+
+Having an IDE-style tooltip pop up is nice, but ~flymake-popon~ is a bit ugly by default.
+
+#+begin_src emacs-lisp
+(after! flymake-popon
+  ; Widen popon
+  (setq flymake-popon-width 120)
+  ; Add visible border
+  (set-face-foreground 'flymake-popon-posframe-border (doom-color 'selection)))
+#+end_src
+
+** Indent Guides
+
+#+call: confpkg("!Pkg highlight-indent-guides")
+
+I've found that character-based indent guides work best.
+
+#+begin_src emacs-lisp
+(after! highlight-indent-guides
+  (setq highlight-indent-guides-method 'character
+        highlight-indent-guides-character 9615
+        highlight-indent-guides-responsive 'top
+        highlight-indent-guides-auto-character-face-perc 90
+        highlight-indent-guides-auto-top-character-face-perc 200))
+#+end_src
+
+** Language Servers
+
+#+call: confpkg("!Pkg lsp")
+
+~lsp-mode~ requires ~avy~, but doesn't load it for some reason.
+
+#+begin_src emacs-lisp
+;; (advice-add #'lsp-avy-lens :before (cmd! (require 'avy)))
+#+end_src
+
+Here's some convenient leader key bindings as well:
+
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Select LSP code lens"
+      "c L" #'lsp-avy-lens
+      :desc "Open errors buffer"
+      "c X" #'flymake-show-project-diagnostics)
+#+end_src
+
+** TODO Magit
+
+#+call: confpkg("!Pkg magit")
+
+*** Magit Delta
+
+#+begin_src emacs-lisp :tangle packages.el
+(package! magit-delta)
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package! magit-delta
+  :hook (magit-mode . magit-delta-mode))
+#+end_src
+
+** Treemacs
+
+#+call: confpkg("!Pkg treemacs")
+
+Treemacs is a really useful package, but it also has a lot of defaults I don't
+like. Let's add a ~use-package!~ declaration to fix some of them:
+
+#+begin_src emacs-lisp
+(use-package! treemacs
+  :init
+  ; More accurate git status
+  (setq +treemacs-git-mode 'deferred
+        treemacs-python-executable "/home/kiana/python3-bin/bin/python")
+  :config
+  (setq ; Child-frame reading is broken (and sucks anyways)
+        treemacs-read-string-input 'from-minibuffer
+        ; Make "SPC 0" work like other window select commands
+        treemacs-select-when-already-in-treemacs 'stay)
+
+  ; Better font styling
+  (custom-set-faces!
+    ; Variable pitch fonts
+    '((treemacs-root-face
+       treemacs-file-face) :inherit variable-pitch)
+    '(treemacs-tags-face :height 0.95 :inherit variable-pitch)
+    '(treemacs-directory-face :inherit treemacs-file-face)
+    '((treemacs-git-added-face
+       treemacs-git-modified-face
+       treemacs-git-renamed-face
+       treemacs-git-conflict-face) :inherit treemacs-file-face)
+    ; Better colors
+    `(treemacs-git-ignored-face
+      :foreground ,(doom-color 'base1) :slant italic :inherit treemacs-file-face)
+    `(treemacs-git-untracked-face
+      :foreground ,(doom-color 'base1) :inherit treemacs-file-face)
+    '(treemacs-async-loading-face
+      :height 0.8 :inherit (font-lock-comment-face treemacs-file-face)))
+
+  (treemacs-hide-gitignored-files-mode) ; Hide git-ignored files by default
+  (treemacs-fringe-indicator-mode -1)   ; No fringe indicator
+  (treemacs-resize-icons 16)            ; Make icons smaller
+  )
+#+end_src
+
+*** Project Integration
+
+I often accidentally open the project tree before I've even selected a project,
+which I don't want because it messes up =treemacs-projectile=. Let's fix that
+problem:
+
+#+begin_src emacs-lisp
+(defun ~/treemacs-restrict (&rest _)
+  (unless (doom-project-p)
+    (user-error "Must be in a project to open project tree")))
+
+(advice-add #'treemacs-select-window :before #'~/treemacs-restrict)
+(advice-add #'+treemacs/toggle :before #'~/treemacs-restrict)
+#+end_src
+
+When I do have a project open, Treemacs is flexible and allows you to open
+directories other than that project. This /would/ be great and convenient, except
+it doesn't do so very well, often opening the wrong directories entirely. This
+convenience function ensures that only the project directory is open.
+
+#+begin_src emacs-lisp
+(defun ~/treemacs-fix-project ()
+  "Modify the current `treemacs' workspace to only include the current project."
+  (interactive)
+  (require 'treemacs)
+  (let* ((name (concat "Perspective " (doom-project-name)))
+         (project (treemacs-project->create! :name (doom-project-name) :path (directory-file-name (doom-project-root))
+                                             :path-status 'local-readable :is-disabled? nil))
+         (workspace (treemacs-workspace->create! :name name :projects (list project) :is-disabled? nil)))
+    ;; Only rebuild workspace if it doesn't have the structure we expect
+    (unless (equal (treemacs-current-workspace) workspace)
+      (setq treemacs--workspaces
+            (append (remove-if (lambda (w) (string= (treemacs-workspace->name w) name))
+                               treemacs--workspaces)
+                    (list workspace)))
+      (setf (treemacs-current-workspace) workspace)
+      (treemacs--invalidate-buffer-project-cache)
+      (treemacs--rerender-after-workspace-change))))
+#+end_src
+
+** TODO VTerm
+
+#+call: confpkg("!Pkg vterm")
+
+Set ~vterm~ to use =fish= as its shell:
+
+#+begin_src emacs-lisp
+(after! vterm
+  (setq-default vterm-shell (executable-find "fish")))
+#+end_src
+
+** Operation Hints
+
+I like having hints that show how large the editing operation I just performed
+was, but the =ophints= module in Doom doesn't look very good to me (it gets rid of
+pulses and color), so I'll override it.
+
+#+begin_src emacs-lisp :tangle modules/ui/ophints/packages.el
+;; -*- no-byte-compile: t; -*-
+;;; ui/ophints/packages.el
+
+(package! evil-goggles)
+#+end_src
+
+#+begin_src emacs-lisp :tangle modules/ui/ophints/config.el
+;; -*- no-byte-compile: t; -*-
+;;; ui/ophints/config.el
+
+(use-package! evil-goggles
+  :hook (doom-first-input . evil-goggles-mode)
+  :init
+  (setq evil-goggles-duration 0.15
+        evil-goggles-blocking-duration 0.12
+        evil-goggles-async-duration 0.2)
+  :config
+  (pushnew! evil-goggles--commands
+            '(evil-magit-yank-whole-line
+              :face evil-goggles-yank-face
+              :switch evil-goggles-enable-yank
+              :advice evil-goggles--generic-async-advice)
+            '(+evil:yank-unindented
+              :face evil-goggles-yank-face
+              :switch evil-goggles-enable-yank
+              :advice evil-goggles--generic-async-advice)
+            '(+eval:region
+              :face evil-goggles-yank-face
+              :switch evil-goggles-enable-yank
+              :advice evil-goggles--generic-async-advice)
+            '(evil-fill
+              :face evil-goggles-fill-and-move-face
+              :switch evil-goggles-enable-fill-and-move
+              :advice evil-goggles--generic-async-advice)
+            '(evil-fill-and-move
+              :face evil-goggles-fill-and-move-face
+              :switch evil-goggles-enable-fill-and-move
+              :advice evil-goggles--generic-async-advice))
+  (custom-set-faces! '(evil-goggles-default-face :background "#2b3a7f")
+                     '(evil-goggles-delete-face :inherit magit-diff-removed-highlight)
+                     '(evil-goggles-paste-face :inherit magit-diff-added-highlight)
+                     '(evil-goggles-change-face :inherit evil-goggles-delete-face)))
+#+end_src
+
+* Applications
+
+** Calculator
+
+#+call: confpkg("Calc")
+
+Emacs Calc is the best calculator I've ever used, and given the fact that it's
+an RPN calculator, that's saying something.
+
+*** Leader Key Bindings
+
+Typing =C-x *= every time I want to use Calc (very often) is annoying.
+
+#+begin_src emacs-lisp
+
+
+(map! :leader
+      :prefix ("#" . "calc")
+      :desc "Emacs Calc"
+      "#" #'calc
+      :desc "Emacs Calc"
+      "c" #'calc
+      :desc "Emacs Calc (full window)"
+      "C" #'full-calc
+      :desc "Quick Calc"
+      "q" #'quick-calc
+      :desc "Keypad"
+      "k" #'calc-keypad
+      :desc "Grab region into Calc"
+      "g" #'~/calc-grab-region
+      :desc "Paste from stack"
+      "y" #'calc-copy-to-buffer
+      :desc "Read keyboard macro"
+      "m" #'read-kbd-macro
+
+      (:prefix ("e" . "embedded")
+       :desc "Embedded mode"
+       "e" #'calc-embedded
+       :desc "Embedded mode (select)"
+       "s" #'calc-embedded-select
+       :desc "Embedded mode (word)"
+       "w" #'calc-embedded-word
+
+       :desc "Activate special operators"
+       "a" #'calc-embedded-activate
+       :desc "Duplicate formula at point"
+       "d" #'calc-embedded-duplicate
+       :desc "New formula"
+       "f" #'calc-embedded-new-formula
+       :desc "Next formula"
+       "j" #'calc-embedded-next
+       :desc "Previous formula"
+       "k" #'calc-embedded-previous
+       :desc "Refresh formula at point"
+       "r" #'calc-embedded-update-formula
+       :desc "Edit formula at point"
+       "`" #'calc-embedded-edit))
+#+end_src
+
+For the grab-region command, I think it makes sense to have it check whether
+your selection is a rectangle (=C-v=):
+
+#+begin_src emacs-lisp
+(defun ~/calc-grab-region (top bot &optional arg)
+  "Perform either `calc-grab-region' or `calc-grab-rectangle' depending on
+what type of visual state is currently active."
+  (interactive "r\nP")
+  (if (eq (evil-visual-type) 'block)
+      (calc-grab-rectangle top bot arg)
+    (calc-grab-region top bot arg)))
+#+end_src
+
+*** Evil Bindings
+
+I want to have evil-esque keybindings in Calc, so let's enable the
+=evil-collection= module for it. I haven't found a better way to do this than to
+edit the relevant variable in ~init.el~:
+
+#+begin_src emacs-lisp :tangle init.el :noweb-ref none
+;; Enable evil-collection-calc
+(setq +evil-collection-disabled-list
+      '(anaconda-mode
+        buff-menu
+        comint
+        company
+        custom
+        eldoc
+        elisp-mode
+        ert
+        free-keys
+        helm
+        help
+        indent
+        image
+        kotlin-mode
+        outline
+        replace
+        shortdoc
+        simple
+        slime
+        lispy))
+#+end_src
+
+Let's also rebind some keys. Preserving evil's =[= and =]= bindings doesn't make
+sense to me, and =C-r= makes more sense as a redo binding than =D D=.
+
+#+begin_src emacs-lisp
+(defadvice! ~/evil-collection-calc-bindings ()
+  :after #'evil-collection-calc-setup
+  (map! :map calc-mode-map
+        :n "C-r" #'calc-redo
+        :n "[" #'calc-begin-vector
+        :n "]" #'calc-end-vector))
+#+end_src
+
+*** Appearance
+
+Calc doesn't use faces to show selections by default, which I think is rather
+strange.
+
+#+begin_src emacs-lisp
+(after! calc
+  (setq calc-highlight-selections-with-faces t
+        calc-show-selections nil)
+  (custom-set-faces!
+    `(calc-selected-face :weight extra-bold :foreground ,(doom-color 'highlight))
+    `(calc-nonselected-face :weight semi-light :foreground ,(doom-color 'comments))))
+#+end_src
+
+*** Other Defaults
+
+#+begin_src emacs-lisp
+(after! calc
+  (setq calc-window-height 13  ; Make window taller
+        calc-angle-mode 'rad   ; Default to radians
+        calc-symbolic-mode t   ; Symbolic evaluation
+  ))
+#+end_src
+
+** TODO Mail
+
+#+call: confpkg()
+
+I use =isync=, =msmtp= and =mu= as Doom Emacs recommends.
+
+#+begin_src emacs-lisp
+(after! mu4e
+  (setq sendmail-program (executable-find "msmtp")
+        send-mail-function #'smtpmail-send-it
+        message-sendmail-f-is-evil t
+        message-sendmail-extra-arguments '("--read-envelope-from")
+        message-send-mail-function #'message-send-mail-with-sendmail))
+#+end_src
+
+*** Accounts
+
+#+begin_src emacs-lisp
+(set-email-account! "gmail"
+                    '((mu4e-sent-folder       . "/gmail/[Gmail]/Sent Mail")
+                      (mu4e-drafts-folder     . "/gmail/[Gmail]/Drafts")
+                      (mu4e-trash-folder      . "/gmail/[Gmail]/Trash")
+                      (mu4e-refile-folder     . "/gmail/[Gmail]/All Mail")
+                      (smtpmail-smtp-user     . "kiana.a.sheibani@gmail.com"))
+                    t)
+#+end_src
+
+** Calendar
+
+The calendar's main purpose for me is to give a better view of the [[*Agenda][Org agenda]].
+
+#+begin_src emacs-lisp
+(after! calfw
+  (setq calendar-week-start-day 1) ; Start week on Monday
+  (setq cfw:org-face-agenda-item-foreground-color (doom-color 'magenta)))
+
+(map! :leader
+      :desc "Calendar"
+      "o c" #'cfw:open-org-calendar)
+#+end_src
+
+* Org
+
+#+call: confpkg()
+
+I love ~org-mode~. In fact, I love it so much that I'm willing to give it its own
+top-level section in this config! Its power and flexibility are unmatched by any
+other productivity/organization tool I've ever used. Much like Emacs itself, all
+alternatives simply vanish.
+
+Unfortunately, with that power comes a *lot* of configuration work up-front. It
+was completely worth it for me when I made it out the other end, but that
+doesn't mean everyone would have the time or patience to make it work.
+
+** Basic Configuration
+
+#+begin_src emacs-lisp
+
+(after! org
+  (setq org-directory "~/org/"
+        org-cycle-emulate-tab nil          ; We don't need this with evil
+        org-attach-dir-relative t
+        org-log-into-drawer t              ; Write logs into :LOGBOOK:
+        org-footnote-auto-label 'confirm   ; Allow editing of footnote names
+        org-startup-with-inline-images t   ; Do more stuff on startup
+        org-startup-with-latex-preview t
+        +org-startup-with-animated-gifs t
+        org-format-latex-options           ; Make latex preview smaller
+          (plist-put org-format-latex-options :scale 0.55))
+
+        ;; Todo Keywords
+        org-todo-keywords
+        '((sequence "TODO(t)" "STRT(s)" "WAIT(w)" "|" "DONE(d)")
+          (sequence "PROJ(p)" "NEXT(n)" "WORK(o!)" "HOLD(h@/!)" "|" "FIN(f!/@)")
+          (sequence "|" "KILL(k@)"))
+        org-todo-keyword-faces
+        '(("STRT" . +org-todo-active)
+          ("WAIT" . +org-todo-onhold)
+          ("KILL" . +org-todo-cancel)
+          ("PROJ" . +org-todo-project)
+          ("WORK" . +org-todo-active)
+          ("HOLD" . +org-todo-onhold))
+
+        ;; Customize appearance
+        org-hide-emphasis-markers t
+        org-hide-leading-stars nil
+        org-superstar-item-bullet-alist '((42 . 8226)
+                                          (43 . 8226)
+                                          (45 . 8226)))
+
+;; Bindings
+(map! :after org
+      :map org-mode-map
+      :i "TAB" #'indent-for-tab-command
+      :i "<tab>" #'indent-for-tab-command
+
+      :localleader
+      "N" #'org-num-mode
+      "C" #'org-columns
+      "p" #'org-priority ; Remove extraneous commands
+      "c D" #'org-clock-display
+      "m b f" #'org-table-eval-formula
+      "m b F" #'org-table-edit-formulas
+
+      ;; Map babel commands into localleader
+      :desc "babel"
+      "v" (lookup-key org-mode-map (kbd "C-c C-v")))
+
+#+end_src
+
+*** Project Links
+
+It's sometimes nice to be able to click a link in an Org file that takes me to
+one of my projects.
+
+#+begin_src emacs-lisp
+(defun org-projectile-follow (path _)
+  "Open a projectile link to PATH."
+  (projectile-switch-project-by-name path))
+
+(defun org-projectile-completion (&optional arg)
+  (let ((project (completing-read "Project: " projectile-known-projects nil 'confirm)))
+    (concat "projectile:" project)))
+
+(after! org
+  (org-link-set-parameters "projectile"
+                           :follow #'org-projectile-follow
+                           :complete #'org-projectile-completion))
+#+end_src
+
+*** Export Directory
+
+Org mode by default exports to the same directory the org-mode file is in. This
+is inconvenient for me, as I use a lot of subdirectories. To fix this, we can
+advise the function ~org-export-output-file-name~.
+
+#+begin_src emacs-lisp
+(defvar org-export-dir (expand-file-name "export/" org-directory)
+  "The directory to export Org mode files to.
+
+If nil, then `default-directory' for the org buffer is used.")
+
+(defadvice! ~/modify-org-export-dir (orig-fn extension &optional subtreep pub-dir)
+  :around #'org-export-output-file-name
+  (unless pub-dir
+    (setq pub-dir org-export-dir))
+  (unless (file-directory-p pub-dir)
+    (make-directory pub-dir t))
+  (funcall orig-fn extension subtreep pub-dir))
+#+end_src
+
+** Tags
+
+Org mode offers a useful tag hierarchy system, configured via ~org-tag-alist~.
+We'll be using ~org-tag-persistent-alist~ instead so that our tag hierarchy can't
+be overwritten.
+
+#+begin_src emacs-lisp
+(defvar classes-mwf '()
+  "Classes that belong under the :MWF: tag.")
+(defvar classes-tr '()
+  "Classes that belong under the :TR: tag.")
+(defvar classes-online '()
+  "Classes that belong under the :online: tag.")
+
+(after! org
+  (setq classes-mwf    '(("HIST1111" . ?1))
+        classes-tr     '(("MATH2203" . ?2))
+        classes-online '(("HIST2111" . ?3)))
+
+  (setq org-tag-persistent-alist
+        `(("area" . ?A) ("goal" . ?G) ("project" . ?P) ("meta" . ?M)
+          (:newline)
+
+          ;; Topics
+          ("economics" . ?e) ("polsci" . ?p) ("math" . ?m) ("history" . ?h)
+          (:startgrouptag) ("math")
+          (:grouptags) ("calculus" . ?c) ("algebra" . ?a) (:endgrouptag)
+
+          ;; Classes
+          (:startgroup) ("college")
+          (:grouptags) ("TR") ("MWF") ("online") (:endgroup)
+
+          (:startgroup) ("MWF")
+          (:grouptags) ,@classes-mwf (:endgroup)
+
+          (:startgroup) ("TR")
+          (:grouptags) ,@classes-tr (:endgroup)
+
+          (:startgroup) ("Online")
+          (:grouptags) ,@classes-online (:endgroup))))
+#+end_src
+
+** TODO Capture Templates
+
+#+begin_src emacs-lisp
+(defun ~/org-project-find-heading ()
+  "Find heading in org project file."
+  (beginning-of-buffer)
+  ;; (unless (string-match-p "\\`\\s-*$" (thing-at-point 'line))
+  ;;   (insert "\n")
+  ;;   (beginning-of-buffer))
+  (when (y-or-n-p "Insert project at heading? ")
+    (require 'consult-org)
+    ;; Prevent consult from trying to recenter the window
+    ;; after capture has already hidden the buffer
+    (let (consult-after-jump-hook)
+      (consult--read
+       (consult--slow-operation "Collecting headings..."
+         (or (consult-org--headings nil "-project" nil)
+             (user-error "No headings")))
+       :prompt "Heading: "
+       :category 'consult-org-heading
+       :sort nil
+       :require-match t
+       :history '(:input consult-org--history)
+       :narrow (consult-org--narrow)
+       :state (consult--jump-state)
+       :group nil
+       :lookup #'consult--lookup-candidate))))
+
+(after! org
+  (setq org-capture-templates
+        '(("t" "Task")
+          ("tt" "Task" entry (file+headline "events.org" "Tasks")
+           "* TODO %?" :empty-lines 1)
+          ("td" "Task with Deadline" entry (file+headline "events.org" "Tasks")
+           "* TODO %?\nDEADLINE: %^{Deadline}T" :empty-lines 1)
+          ("tD" "Task with Deadline (date only)" entry (file+headline "events.org" "Tasks")
+           "* TODO %?\nDEADLINE: %^{Deadline}t" :empty-lines 1)
+          ("ts" "Scheduled Task" entry (file+headline "events.org" "Tasks")
+           "* TODO %?\nSCHEDULED: %^{Time}T" :empty-lines 1)
+          ("tS" "Scheduled Task (date only)" entry (file+headline "events.org" "Tasks")
+           "* TODO %?\nSCHEDULED: %^{Date}t" :empty-lines 1)
+          ("e" "Event" entry (file+headline "events.org" "Events")
+           "* %?\n%^T" :empty-lines 1)
+          ("E" "Event (date only)" entry (file+headline "events.org" "Events")
+           "* %?\n$^t" :empty-lines 1)
+          ("p" "Project" entry (file+function "projects.org" ~/org-project-find-heading)
+           "* PROJ %? :project:\n:PROPERTIES:\n:VISIBILITY: folded\n:END:
+:LOGBOOK:\n- Created                              %U\n:END:"
+           :empty-lines 1))))
+#+end_src
+
+** Agenda
+
+#+call: confpkg("Org Agenda")
+
+*** Default Agenda View
+
+The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I
+want to open my agenda, it's to see a specific view.
+
+#+begin_src emacs-lisp
+(after! org
+  (setq org-agenda-custom-commands
+        '(("n" "Agenda and all tasks"
+           ((agenda "")
+            (tags-todo "-goal-project+DEADLINE=\"\"+SCHEDULED=\"\"+TIMESTAMP=\"\"")
+            (stuck ""))))
+        org-stuck-projects
+        '("project/!-TODO-STRT-WAIT-DONE"
+          ("PROJ" "NEXT" "FIN" "KILL")
+          nil "")))
+
+(defun ~/org-agenda (&optional arg)
+  "Wrapper around preferred agenda view."
+  (interactive "P")
+  (org-agenda arg "n"))
+
+(map! :leader
+      :desc "Org agenda"
+      "o a" #'~/org-agenda
+      :desc "Org agenda dispatcher" ; Use shift to access full dispatcher
+      "o A" #'org-agenda)
+#+end_src
+
+*** Agenda Files
+
+I have a lot of different subdirectories and groupings in my org directory, but
+unfortunately directories listed in ~org-agenda-files~ aren't checked recursively!
+I haven't yet found out how to solve this problem directly, so instead I'm going
+to mitigate it somewhat by recursively adding every subdirectory of my org
+directory to ~org-agenda-files~.
+
+#+begin_src emacs-lisp
+(defun directory-dirs (dirs)
+  "Recursively find all subdirectories of DIRS, ignoring dotfiles."
+  (when dirs
+    (let (result)
+      (dolist (dir dirs)
+        (let ((dir (directory-file-name dir))
+              (files (directory-files dir nil nil t)))
+          (dolist (file files)
+            (unless (= (aref file 0) ?.)
+              (let ((file (concat dir "/" file)))
+                (when (file-directory-p file)
+                  (setq result (cons file result))))))))
+      (append dirs (directory-dirs result)))))
+
+(defvar org-agenda-files-function #'org-agenda-files-function
+  "The function to determine the org agenda files.")
+
+(defun org-agenda-files-function (get-dirs)
+  (funcall get-dirs (list org-directory)))
+
+(defun ~/org-agenda-files-update (&optional fn)
+  "Populate `org-agenda-files' with the result of calling FN, or
+`org-agenda-files-function' by default."
+  (interactive)
+  (unless fn
+    (setq fn org-agenda-files-function))
+  (setq org-agenda-files (funcall fn #'directory-dirs)))
+
+
+(after! org (~/org-agenda-files-update))
+#+end_src
+
+** Citations
+
+#+call: confpkg("Org Cite")
+
+Org mode has a very robust system for specifying citations, one which is taken
+advantage of by the package =citar=.
+
+Let's start with some configuration. I use [[https://www.zotero.org/][Zotero]] to manage my citations, and
+when I want to use them in Org mode I export them to a file =library.json= (CSL
+JSON) in my org directory.
+
+#+begin_src emacs-lisp
+(after! org
+  (setq org-cite-csl-styles-dir "~/Zotero/styles"
+        org-cite-csl--fallback-style-file "/home/kiana/Zotero/styles/modern-language-styles.csl"
+        org-cite-global-bibliography (list (expand-file-name "library.json" org-directory))
+        citar-bibliography org-cite-global-bibliography))
+#+end_src
+
+And we should also make it look a little prettier:
+
+#+begin_src emacs-lisp
+;; Make faces conform to theme
+(after! org
+  (custom-set-faces!
+    `(org-cite :foreground ,(doom-color 'green))
+    `(org-cite-key :slant italic :foreground ,(doom-color 'green))))
+
+;; Citar icons
+(after! citar
+  (setq citar-indicators
+        (list
+         (citar-indicator-create
+          :symbol (nerd-icons-mdicon "nf-md-link"
+                                     :face 'nerd-icons-lblue)
+          :padding "  "
+          :function #'citar-has-links
+          :tag "has:links")
+         (citar-indicator-create
+          :symbol (nerd-icons-mdicon "nf-md-file"
+                                     :face 'nerd-icons-lred)
+          :padding "  "
+          :function #'citar-has-files
+          :tag "has:files")
+         (citar-indicator-create
+          :symbol (nerd-icons-mdicon "nf-md-note_text"
+                                     :face 'nerd-icons-blue)
+          :padding "  "
+          :function #'citar-has-notes
+          :tag "has:notes")
+         (citar-indicator-create
+          :symbol (nerd-icons-mdicon "nf-md-check"
+                                     :face 'nerd-icons-lgreen)
+          :padding "  "
+          :function #'citar-is-cited
+          :tag "is:cited"))))
+#+end_src
+
+** Journal
+
+#+call: conpfkg("Org Journal")
+
+I don't use ~org-journal~ anymore, but I'm keeping my old configuration for it in
+case I want to go back.
+
+#+begin_src emacs-lisp
+(after! org-journal
+  ;; One entry per day, no separation
+  (setq org-journal-file-format "%Y-%m-%d"
+        org-journal-hide-entries-p nil))
+#+end_src
+
+To make opening the journal more convenient, here's a command to open the latest
+entry:
+
+#+begin_src emacs-lisp
+(defun +org/org-journal-open-latest ()
+  (interactive)
+  (require 'org-journal)
+  (funcall org-journal-find-file
+           (car (last (seq-filter #'file-regular-p
+                                  (directory-files org-journal-dir t))))))
+
+(map! :leader
+      :desc "Journal"
+      "o j" #'+org/org-journal-open-latest)
+#+end_src
+
+** Org Roam
+
+#+call: confpkg()
+
+I'm still in the middle of developing my workflow with =org-roam=. Here's what I
+have so far.
+
+#+begin_src emacs-lisp
+(defun org-roam-node-file-maybe (node &optional dir)
+  "Get file name from NODE, or return a default filename in directory DIR."
+  (unless dir (setq dir org-roam-directory))
+  (or (org-roam-node-file node)
+      (expand-file-name (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
+                        dir)))
+
+(defun org-roam-node-file-maybe-pick-dir (node)
+  "Get file name from NODE, or ask for directory and return a default filename."
+  (or (org-roam-node-file node)
+      (expand-file-name (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
+                        (read-directory-name "Directory: " org-roam-directory))))
+
+
+(after! org-roam
+  (setq org-roam-mode-sections
+        '((org-roam-backlinks-section :unique t)
+          org-roam-reflinks-section
+          org-roam-unlinked-references-section)
+        org-roam-capture-templates
+        '(("d" "Default" plain "%?"
+           :target (file+head "${file-maybe-pick-dir}"
+                              "#+title: ${title}\n#+filetags:")
+           :unnarrowed t))
+        org-roam-dailies-capture-templates
+        '(("d" "Default" entry "* %?"
+           :target (file+head "%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>")))))
+#+end_src
+
+*** Roam Links
+
+Making links to Roam nodes is a bit finicky. This helps fix some of that.
+
+#+begin_src emacs-lisp
+(defun org-roam-completion (&optional arg)
+  (let ((node (org-roam-node-read nil nil nil t)))
+    (concat "id:" (org-roam-node-id node))))
+
+(defun org-roam-insert-description (idstr)
+  (org-roam-node-title (org-roam-node-from-id (substring idstr 3))))
+
+(after! org
+  (org-link-set-parameters "roam"
+                           :complete #'org-roam-completion
+                           :insert-description #'org-roam-insert-description))
+#+end_src
+
+* Languages and Modes
+
+Despite Emacs being my editor of choice for programming, I don't actually have a
+lot of configuration for programming languages. I suppose that this is because
+language packages tend to not need much configuration, as the bounds of what a
+language mode needs to do are typically defined by the language itself.
+
+** Haskell
+
+#+call: confpkg("!Mode haskell")
+
+Operators being in italics looks ugly, so let's fix that.
+
+#+begin_src emacs-lisp
+(after! haskell-mode
+  (custom-set-faces! '(haskell-operator-face :slant normal)))
+#+end_src
+
+** Dired
+
+#+call: confpkg("!Mode dired")
+
+Dired by default spawns a new buffer for every directory, which clutters up your
+buffer list very quickly.
+
+#+begin_src emacs-lisp
+(after! dired
+  (setq dired-kill-when-opening-new-dired-buffer t))
+#+end_src
+
+** Prose
+
+#+call: confpkg("!Mode text")
+
+I like having ~auto-fill-mode~ on while writing text:
+
+#+begin_src emacs-lisp
+(add-hook! text-mode #'auto-fill-mode)
+#+end_src
