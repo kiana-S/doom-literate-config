@@ -1,8 +1,8 @@
 #+title: Doom Emacs Config
 #+author: tokinanpa
 #+email: kiana.a.sheibani@gmail.com
-#+property: header-args :mkdirp yes :results silent :exports code :eval no-export
-#+property: header-args:shell :tangle "setup.sh"
+#+property: header-args:elisp :results replace :exports code
+#+property: header-args :tangle no :results silent :eval no-export
 
 * Introduction
 
@@ -106,9 +106,6 @@ for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
 - Change the package template to contain my information
 
 **** Confpkg :noexport:
-:PROPERTIES:
-:header-args: :tangle no :noweb yes :mkdirp yes :results silent :eval no-export
-:END:
 
 ***** Preparation
 
@@ -125,14 +122,14 @@ for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
 #+end_src
 
 #+header: :tangle (expand-file-name (make-temp-name "emacs-org-babel-excuses/confpkg-prepare-") temporary-file-directory)
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb no-export :export-embed no
 <<confpkg-prepare()>>
 #+end_src
 
 ***** Setup
 
 #+name: confpkg-setup
-#+begin_src emacs-lisp :results silent
+#+begin_src emacs-lisp :results silent :noweb no-export
 
 (setq confpkg--num 0
       confpkg--list nil)
@@ -386,7 +383,7 @@ for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
 ***** Confpkg Dispatch
 
 #+name: confpkg
-#+begin_src emacs-lisp :var name="" needs="" after="" pre="" prefix="config-" via="copy" :results silent raw
+#+begin_src elisp :var name="" needs="" after="" pre="" prefix="config-" via="copy" :results silent raw :noweb no-export
 ;; Babel block for use with #+call
 ;; Arguments:
 ;;  - name, the name of the config sub-package
@@ -429,7 +426,7 @@ for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
     (cl-incf confpkg--num)
     (org-set-property
      "header-args:emacs-lisp"
-     (format ":tangle no :noweb-ref %s" confpkg-name))
+     (format ":noweb no-export :tangle no :noweb-ref %s" confpkg-name))
     (push (list :name name
                 :package confpkg-name
                 :file confpkg-file
@@ -506,6 +503,18 @@ for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
 #+end_src
 
 #+call: confpkg-quieter-output()
+
+***** CLI
+
+#+begin_src emacs-lisp :tangle cli.el :noweb-ref none
+;;; cli.el -*- lexical-binding: t; -*-
+(setq org-confirm-babel-evaluate nil)
+
+(defun doom-shut-up-a (orig-fn &rest args)
+  (quiet! (apply orig-fn args)))
+
+(advice-add 'org-babel-execute-src-block :around #'doom-shut-up-a)
+#+end_src
 
 ***** Timings
 
@@ -713,18 +722,6 @@ NODE defaults to the root node."
         (pop-to-buffer buf)))))
 #+end_src
 
-# CLI
-
-#+begin_src emacs-lisp :tangle cli.el :noweb-ref none
-;;; cli.el -*- lexical-binding: t; -*-
-(setq org-confirm-babel-evaluate nil)
-
-(defun doom-shut-up-a (orig-fn &rest args)
-  (quiet! (apply orig-fn args)))
-
-(advice-add 'org-babel-execute-src-block :around #'doom-shut-up-a)
-#+end_src
-
 * Doom Modules
 
 One of Doom Emacs's most useful features is its modular configuration system,
@@ -732,7 +729,7 @@ allowing configuration code to be sectioned into modules that can be enabled or
 customized individually. Doom provides a full suite of pre-written modules to
 enable.
 
-#+begin_src emacs-lisp :tangle init.el :noweb no-export :noweb-ref none
+#+begin_src emacs-lisp :tangle init.el :noweb no-export
 ;;; init.el -*- lexical-binding: t; -*-
 
 ;; This file controls what Doom modules are enabled and what order they load in.
@@ -1017,6 +1014,9 @@ This is mostly config settings that don't belong to any particular package and
 aren't important enough to get their own major section.
 
 ** Sensible Settings
+:PROPERTIES:
+:header-args:emacs-lisp: :noweb no-export :tangle no :noweb-ref config-settings
+:END:
 
 #+call: confpkg("Settings")
 
@@ -1270,6 +1270,8 @@ only allow =RET= to be used if Company has been explicitly interacted with.
 #+end_src
 
 *** Spell Correction
+
+#+call: confpkg("!Pkg company-spell")
 
 I've been having problems with ~company-ispell~, mainly due to Ispell requiring a
 text-based dictionary (unlike Aspell, which uses a binary dictionary). So let's
@@ -1805,7 +1807,7 @@ makes that a bit too visually noisy.
 
 And just to make sure nothing else accidentally starts running:
 
-#+begin_src emacs-lisp :tangle packages.el
+#+begin_src emacs-lisp :tangle packages.el :noweb-ref none
 (package! flycheck :disable t)
 (package! flyspell :disable t)
 #+end_src
@@ -2225,7 +2227,7 @@ doesn't mean everyone would have the time or patience to make it work.
         org-startup-with-latex-preview t
         +org-startup-with-animated-gifs t
         org-format-latex-options           ; Make latex preview smaller
-          (plist-put org-format-latex-options :scale 0.55))
+          (plist-put org-format-latex-options :scale 0.55)
 
         ;; Todo Keywords
         org-todo-keywords
@@ -2245,7 +2247,7 @@ doesn't mean everyone would have the time or patience to make it work.
         org-hide-leading-stars nil
         org-superstar-item-bullet-alist '((42 . 8226)
                                           (43 . 8226)
-                                          (45 . 8226)))
+                                          (45 . 8226))))
 
 ;; Bindings
 (map! :after org
@@ -2264,7 +2266,6 @@ doesn't mean everyone would have the time or patience to make it work.
       ;; Map babel commands into localleader
       :desc "babel"
       "v" (lookup-key org-mode-map (kbd "C-c C-v")))
-
 #+end_src
 
 *** Project Links
@@ -2535,7 +2536,7 @@ And we should also make it look a little prettier:
 
 ** Journal
 
-#+call: conpfkg("Org Journal")
+#+call: confpkg("Org Journal")
 
 I don't use ~org-journal~ anymore, but I'm keeping my old configuration for it in
 case I want to go back.
