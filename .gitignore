@@ -1,0 +1,14 @@
+config.*
+!config.org
+init.el
+packages.el
+cli.el
+
+subconf/
+modules/
+
+_minted-config
+abbrev.el
+
+!.dir-locals.el
+~*
