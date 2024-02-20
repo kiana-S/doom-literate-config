@@ -1054,6 +1054,16 @@ applications.
       user-mail-address "kiana.a.sheibani@gmail.com")
 #+end_src
 
+** Authentication
+
+I don't want my cache files to get deleted whenever I mess up my Doom install,
+so let's move them to somewhere more safe.
+
+#+begin_src emacs-lisp
+(setq auth-sources '("~/.authinfo.gpg")
+      auth-source-cache-expiry nil)
+#+end_src
+
 ** Aesthetics
 
 #+call: confpkg("Visual")
