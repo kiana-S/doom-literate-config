@@ -2417,10 +2417,24 @@ be overwritten.
 
 #+call: confpkg("Org Agenda")
 
+*** Configuration
+
+A full week-long agenda is usually too cluttered for me to read, so I'll narrow
+it down to a single day. I also like the week to start on Monday.
+
+#+begin_src emacs-lisp
+(after! org
+  (setq org-agenda-span 'day
+        org-agenda-start-day nil
+
+        ;; 1 = Monday
+        org-agenda-start-on-weekday 1))
+#+end_src
+
 *** Default Agenda View
 
 The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I
-want to open my agenda, it's to see a specific view.
+want to open my agenda, it's to see my "preferred" view.
 
 #+begin_src emacs-lisp
 (after! org
