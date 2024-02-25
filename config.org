@@ -1964,7 +1964,7 @@ convenience function ensures that only the project directory is open.
             (append (remove-if (lambda (w) (string= (treemacs-workspace->name w) name))
                                treemacs--workspaces)
                     (list workspace)))
-      (setf (treemacs-current-workspace) workspace)
+      (treemacs-do-switch-workspace workspace)
       (treemacs--invalidate-buffer-project-cache)
       (treemacs--rerender-after-workspace-change))))
 #+end_src
