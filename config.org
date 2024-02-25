@@ -105,7 +105,7 @@ for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
 - Reorganize to get rid of superfluous noweb references
 - Change the package template to contain my information
 
-**** Confpkg :noexport:
+**** confpkg :noexport:
 
 ***** Preparation
 
@@ -901,7 +901,6 @@ vc
 #+name: doom-os
 #+begin_src emacs-lisp
 :os
-(:if IS-MAC macos)
 tty
 #+end_src
 
