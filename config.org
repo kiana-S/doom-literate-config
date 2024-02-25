@@ -2261,10 +2261,12 @@ doesn't mean everyone would have the time or patience to make it work.
 
 ;; Bindings
 (map! :after org
-      :map org-mode-map
+      :map evil-org-mode-map
       :i "TAB" #'indent-for-tab-command
-      :i "<tab>" #'indent-for-tab-command
+      :i "<tab>" #'indent-for-tab-command)
 
+(map! :after org
+      :map org-mode-map
       :localleader
       "N" #'org-num-mode
       "C" #'org-columns
