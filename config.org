@@ -1055,6 +1055,8 @@ applications.
 
 ** Authentication
 
+#+call: confpkg("Auth")
+
 I don't want my cache files to get deleted whenever I mess up my Doom install,
 so let's move them to somewhere more safe.
 
@@ -2196,6 +2198,8 @@ I use =isync=, =msmtp= and =mu= as Doom Emacs recommends.
 #+end_src
 
 ** Calendar
+
+#+call: confpkg()
 
 The calendar's main purpose for me is to give a better view of the [[*Agenda][Org agenda]].
 
