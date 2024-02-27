@@ -2436,7 +2436,7 @@ be overwritten.
 (defvar classes-tr '()
   "Classes that belong under the :TR: tag.")
 (defvar classes-online '()
-  "Classes that belong under the :online: tag.")
+  "Classes that belong under the :Online: tag.")
 
 (after! org
   (setq classes-mwf    '(("HIST1111" . ?1))
@@ -2446,15 +2446,18 @@ be overwritten.
   (setq org-tag-persistent-alist
         `(("area" . ?A) ("goal" . ?G) ("project" . ?P) ("meta" . ?M)
           (:newline)
-
           ;; Topics
-          ("economics" . ?e) ("polsci" . ?p) ("math" . ?m) ("history" . ?h)
+
+          ("economics") ("polsci") ("math") ("history")
           (:startgrouptag) ("math")
-          (:grouptags) ("calculus" . ?c) ("algebra" . ?a) (:endgrouptag)
+          (:grouptags) ("calculus") ("algebra") (:endgrouptag)
 
           ;; Classes
+          (:startgrouptag) ("college")
+          (:grouptags) ("assign") ("notes") (:endgrouptag)
+
           (:startgroup) ("college")
-          (:grouptags) ("TR") ("MWF") ("online") (:endgroup)
+          (:grouptags) ("TR") ("MWF") ("Online") (:endgroup)
 
           (:startgroup) ("MWF")
           (:grouptags) ,@classes-mwf (:endgroup)
