@@ -1406,6 +1406,32 @@ that provides the most information and I don't mind the space it takes up.
   (setq eldoc-documentation-strategy 'eldoc-documentation-compose))
 #+end_src
 
+** Marginalia
+
+#+call: confpkg("!Pkg marginalia")
+
+Marginalia mostly works fine on its own, but we should add a few more
+Doom-specific prompt categories to its registry.
+
+#+begin_src emacs-lisp
+(after! marginalia
+  ;; Workspace and project categories
+  (pushnew! marginalia-prompt-categories
+            '("\\<workspace\\>" . workspace)
+            '("\\<projects?\\>" . known-project))
+
+  ;; Annotate equivalently to files
+  (pushnew! marginalia-annotator-registry
+            '(known-project marginalia-annotate-file builtin none))
+
+  ;; Remove special case for projectile-switch-project
+  ;; (now covered by known-project category)
+  (setf (alist-get #'projectile-switch-project marginalia-command-categories nil t) nil))
+#+end_src
+
+These new categories can then be used to define [[*Keymaps][Embark keymaps]] for minibuffer
+completion.
+
 ** Embark
 
 #+call: confpkg("!Pkg embark")
