@@ -1534,9 +1534,9 @@ We'll be using a lot of new actions, so let's set their hooks.
   (cl-pushnew #'embark--mark-target
               (alist-get #'evil-change embark-around-action-hooks))
   (cl-pushnew #'embark--mark-target
-              (alist-get #'+eval:region embark-around-action-hooks))
+              (alist-get #'+eval/region embark-around-action-hooks))
   (cl-pushnew #'embark--mark-target
-              (alist-get #'+eval:replace-region embark-around-action-hooks))
+              (alist-get #'+eval/region-and-replace embark-around-action-hooks))
 
   (cl-pushnew #'embark--beginning-of-target
               (alist-get #'backward-word embark-pre-action-hooks))
@@ -1675,9 +1675,9 @@ Here's the big one.
               "k" #'backward-list
               "h" #'backward-up-list
               "=" #'indent-region
-              "RET" #'+eval:region
-              "e" #'+eval:region
-              "E" #'+eval:replace-region
+              "RET" #'+eval/region
+              "e" #'+eval/region
+              "E" #'+eval/region-and-replace
               "TAB" nil "<" nil "u" nil "n" nil "p" nil)
         (:map embark-defun-map
               "c" #'evil-change
@@ -1688,9 +1688,9 @@ Here's the big one.
         (:map embark-variable-map
               "Y" #'embark-save-variable-value
               "K" #'helpful-variable
-              "RET" #'+eval:region
-              "e" #'+eval:region
-              "E" #'+eval:replace-region
+              "RET" #'+eval/region
+              "e" #'+eval/region
+              "E" #'+eval/region-and-replace
               "i" #'embark-insert-variable-value
               "v" #'mark
               "c" #'evil-change
