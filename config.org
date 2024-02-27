@@ -2042,9 +2042,10 @@ problem:
 #+end_src
 
 When I do have a project open, Treemacs is flexible and allows you to open
-directories other than that project. This /would/ be great and convenient, except
-it doesn't do so very well, often opening the wrong directories entirely. This
-convenience function ensures that only the project directory is open.
+directories other than that project. This /would/ be great and convenient if it
+weren't for the fact that it doesn't do so very well, often opening the wrong
+directories entirely. This convenience function ensures that only the project
+directory is open.
 
 #+begin_src emacs-lisp
 (defun ~/treemacs-fix-project ()
@@ -2091,7 +2092,7 @@ pulses and color), so I'll override it.
 #+end_src
 
 #+begin_src emacs-lisp :tangle modules/ui/ophints/config.el
-;; -*- no-byte-compile: t; -*-
+;;; -*- lexical-binding: t; -*-
 ;;; ui/ophints/config.el
 
 (use-package! evil-goggles
