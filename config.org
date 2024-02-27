@@ -1447,9 +1447,6 @@ Some of the targeting functions are a bit too general in what they accept. We'll
 adjust the expression and identifier targeters to only work in ~prog-mode~ and the
 "defun" targeter to only work in Emacs Lisp code.
 
-We'll also define a word targeter, since that was previously handled by the
-identifier one.
-
 #+begin_src emacs-lisp
 (defun ~/embark-target-prog-mode (old-fn)
   "Advise an embark target to only activate in `prog-mode'."
@@ -1463,11 +1460,21 @@ identifier one.
 (advice-add #'embark-target-identifier-at-point :around #'~/embark-target-identifier)
 
 (after! embark
-  (embark-define-thingatpt-target defun emacs-lisp-mode)
+  (embark-define-thingatpt-target defun emacs-lisp-mode))
+#+end_src
 
-  ; Word targeter
-  (embark-define-thingatpt-target word
-    text-mode help-mode Info-mode man-common)
+We'll also define a word targeter, since that case was previously handled by the
+identifier one.
+
+#+begin_src emacs-lisp
+(defun embark-target-word-at-point ()
+  "Target word at point."
+  (when (or (derived-mode-p 'text-mode 'help-mode 'Info-mode 'man-common)
+            (doom-point-in-comment-p))
+    (when-let ((bounds (bounds-of-thing-at-point 'word)))
+      (cons 'word (cons (buffer-substring (car bounds) (cdr bounds)) bounds)))))
+
+(after! embark
   (pushnew! embark-target-finders #'embark-target-word-at-point))
 #+end_src
 
