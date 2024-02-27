@@ -2230,8 +2230,11 @@ doesn't mean everyone would have the time or patience to make it work.
 
 #+begin_src emacs-lisp
 
+(setq org-directory "~/org/")
+
 (after! org
-  (setq org-directory "~/org/"
+  (setq org-archive-location               ; Global archive file
+        (concat org-directory ".org_archive::")
         org-cycle-emulate-tab nil          ; We don't need this with evil
         org-attach-dir-relative t
         org-log-into-drawer t              ; Write logs into :LOGBOOK:
