@@ -1190,9 +1190,14 @@ TYPE specifies the type of project to create. It can take the following values:
 - `projectile', which creates a .projectile file in the project root.
 - A string, which is used as a filename to create in the project root.
 - A function, which is called with no arguments inside the root of the project.
+When called interactively, this defaults to `git' unless a prefix arg is given.
 
 If PARENTS is non-nil, the parents of the specified directory will also be created."
-  (interactive (list (read-directory-name "Create new project: ") 'git t))
+  (interactive (list (read-directory-name "Create new project: ")
+                     (if current-prefix-arg
+                         (intern (completing-read "Project type: "
+                                                  '("git" "projectile") nil t))
+                       'git) t))
   (make-directory dir parents)
   (let ((default-directory dir))
     (pcase type
