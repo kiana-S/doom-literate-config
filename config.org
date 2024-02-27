@@ -2530,23 +2530,89 @@ it down to a single day. I also like the week to start on Monday.
 (after! org
   (setq org-agenda-span 'day
         org-agenda-start-day nil
+        org-agenda-start-on-weekday 1 ; 1 = Monday
 
-        ;; 1 = Monday
-        org-agenda-start-on-weekday 1))
+        org-agenda-sorting-strategy
+        '((agenda habit-down time-up urgency-down category-up)
+          (todo urgency-down time-up category-up)
+          (tags urgency-down time-up category-up)
+          (search category-up))))
 #+end_src
 
-*** Default Agenda View
+*** Agenda View
+
+The Org agenda is a very nice feature, but by default it doesn't really provide
+enough customization to fit my needs. I like to have nice categories to make
+parsing my todos easier, so we'll use ~org-super-agenda~:
+
+#+begin_src emacs-lisp :tangle packages.el :noweb-ref none
+(package! org-super-agenda)
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package! org-super-agenda
+  :commands org-super-agenda-mode)
+
+(after! org-agenda
+  (let ((inhibit-message t))
+    (org-super-agenda-mode))
+
+  ;; This map causes evil bindings to not work while on super agenda headers
+  (setq org-super-agenda-header-map nil))
+#+end_src
 
 The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I
 want to open my agenda, it's to see my "preferred" view.
 
 #+begin_src emacs-lisp
+(defun ~/org-roam-get-linked-nodes (node tag)
+  "Return the nodes that NODE links to that are tagged with TAG."
+  (let* ((response (org-roam-db-query [:select :distinct [dest]
+                                       :from links
+                                       :where (= source $s1)
+                                       :and (= type "id")
+                                       :group :by dest]
+                                      (org-roam-node-id node)))
+         (ids (mapcar #'car response)))
+    (--keep (let ((node (org-roam-node-from-id it)))
+              (when (-contains? (org-roam-node-tags node) tag)
+                node)) ids)))
+
+(defun ~/org-agenda-section-by-link (prefix tag item)
+  "Org super-agenda function to categorize agenda entries by linked node with TAG."
+  (when-let* ((marker (org-super-agenda--get-marker item))
+              (node (org-super-agenda--when-with-marker-buffer marker
+                      (org-roam-node-at-point)))
+              (link (car-safe (~/org-roam-get-linked-nodes node tag))))
+    (concat prefix (org-roam-node-title link))))
+
 (after! org
   (setq org-agenda-custom-commands
-        '(("n" "Agenda and all tasks"
+        '(("o" "Overview"
            ((agenda "")
-            (tags-todo "-goal-project+DEADLINE=\"\"+SCHEDULED=\"\"+TIMESTAMP=\"\"")
-            (stuck ""))))
+            (alltodo ""
+                     ((org-super-agenda-groups
+                       '((:discard (:todo "PROJ"))
+                         (:name "Important"
+                          :priority "A")
+                         (:name "Assignments"
+                          :tag "assign"
+                          :order 1)
+                         (:auto-map (lambda (item)
+                                      (~/org-agenda-section-by-link "Goal: " "goal" item))
+                          :order 2)
+                         (:auto-map (lambda (item)
+                                      (~/org-agenda-section-by-link "Area: " "area" item))
+                          :order 3)
+                         (:name "Notes to Intake"
+                          :tag "notes"
+                          :order 4)
+                         (:name "Projects"
+                          :and (:tag "project"
+                                :todo ("WORK" "HOLD"))
+                          :order 5))))))))
+
+        ;; In case I ever use this
         org-stuck-projects
         '("project/!-TODO-STRT-WAIT-DONE"
           ("PROJ" "NEXT" "FIN" "KILL")
@@ -2555,7 +2621,7 @@ want to open my agenda, it's to see my "preferred" view.
 (defun ~/org-agenda (&optional arg)
   "Wrapper around preferred agenda view."
   (interactive "P")
-  (org-agenda arg "n"))
+  (org-agenda arg "o"))
 
 (map! :leader
       :desc "Org agenda"
