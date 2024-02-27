@@ -1239,6 +1239,63 @@ lol
       (run-hooks 'projectile-find-file-hook))))
 #+end_src
 
+** Automated Nix Builds
+
+#+call: confpkg("Nix")
+
+Some packages in this config such as =treemacs=, =org-roam=, etc. require certain
+tools to be in the environment. On a Nix-based system, there are a few different
+ways to handle this:
+
+1. Put that tool in the actual environment, e.g. in a profile. This makes sense
+   for simple things (=ripgrep=, =sqlite=, etc) but for more opinionated things like
+   an instance of Python it becomes less desirable.
+2. Build the tool and put a symlink to the output somewhere, e.g. in the HOME
+   directory. This avoids polluting the environment, but you still have to deal
+   with an unwieldy symlink that breaks Emacs if you accidentally delete it.
+   This was my approach before coming up with the third option:
+3. Build the tool and point Emacs directly to the store path. This is the
+   simplest solution, but requires the most complex Emacs configuration.
+
+This section is an implementation of that third solution.
+
+We first need a function to build a flake reference:
+
+#+begin_src emacs-lisp
+(defun nix-build-out-path (out &optional impure)
+  "Build the given flake output OUT and return the output path.
+
+If IMPURE is t, then allow impure builds."
+  (message "Building \"%s\" ..." out)
+  (s-trim (shell-command-to-string
+           (concat "nix build --no-link --print-out-paths "
+                   (when impure "--impure ") out))))
+#+end_src
+
+This works well enough if we just want to build something, but there's a
+problem: we haven't indicated to Nix that we want this output to stick around,
+so it will be deleted the next time we garbage collect. To fix this, we can
+write a wrapper function that also makes the output path a garbage collection
+root.
+
+#+begin_src emacs-lisp
+(defun nix-build-out-path-gcroot (name out &optional impure)
+  "Build the given flake output OUT, register its output path as
+a garbage collection root under NAME, and return the output path.
+
+The GC root is placed under \"/nix/var/nix/gcroots/emacs/NAME\". If
+a call to this function reuses the same NAME argument, then the
+symlink is overwritten.
+
+If IMPURE is t, then allow impure builds."
+  (let* ((gcdir "/sudo::/nix/var/nix/gcroots/emacs")
+         (sym (expand-file-name name gcdir))
+         (path (nix-build-out-path out impure)))
+    (make-directory gcdir t)
+    (make-symbolic-link path sym t)
+    path))
+#+end_src
+
 * Packages
 
 Now that we've enabled our preferred modules and done some basic configuration,
@@ -1894,10 +1951,12 @@ like. Let's add a ~use-package!~ declaration to fix some of them:
 
 #+begin_src emacs-lisp
 (use-package! treemacs
+  :defer t
   :init
   ; More accurate git status
   (setq +treemacs-git-mode 'deferred
-        treemacs-python-executable "/home/kiana/python3-bin/bin/python")
+        treemacs-python-executable
+        (concat (nix-build-out-path-gcroot "nixpkgs#python3") "/bin/python"))
   :config
   (setq ; Child-frame reading is broken (and sucks anyways)
         treemacs-read-string-input 'from-minibuffer
