@@ -2129,6 +2129,17 @@ pulses and color), so I'll override it.
                      '(evil-goggles-change-face :inherit evil-goggles-delete-face)))
 #+end_src
 
+** YASnippet
+
+#+call: confpkg()
+
+Allow nested snippets:
+
+#+begin_src emacs-lisp
+(after! yasnippet
+  (setq yas-triggers-in-field t))
+#+end_src
+
 * Applications
 
 ** Calculator
