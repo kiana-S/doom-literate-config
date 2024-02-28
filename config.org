@@ -2481,6 +2481,117 @@ be overwritten.
           (:grouptags) ,@classes-online (:endgroup))))
 #+end_src
 
+** Org Roam
+
+#+call: confpkg()
+
+When I started out using Org mode, I just used vanilla Org files to manage my
+notes. This worked, but as my notes grew more and more I've begun to
+increasingly rely on [[https://www.orgroam.com/][Org-roam]] to more systematically manage my organization.
+
+*** Concept
+
+Org-roam is inspired by Roam Research, and like that tool it is based on the
+Zettelkasten (slip-box) note-taking method. In the Zettelkasten method, notes
+and concepts are separated into small chunks (called "nodes" in Org-roam
+terminology). These notes can live freely in any file on your system, and are
+linked to each other through ID links, leading to a freer note system that isn't
+tied to any particular organizational structure or hierarchy.
+
+*** Task Management
+
+In my use of Org-roam for task management, I divide nodes into a few different
+categories:
+
+1. *Areas*, which represent continual areas of your life to organize and plan;
+2. *Goals*, short- or long-term, things that can be completed;
+3. *Tasks*, which are one-time and contribute to goals or areas.
+
+Areas are stored as subnodes of the =Areas= file node, and likewise for goals.
+They also have the =:area:= and =:goal:= tags respectively. A task is a node that is
+a TODO entry that links to an area or a goal. We can thus check for if a node is
+a task by checking if the node links to a =:area:= or =:goal:= tagged node.
+
+#+begin_src emacs-lisp
+(defun ~/org-roam-get-linked-nodes (node tag)
+  "Return the nodes that NODE links to that are tagged with TAG."
+  (let* ((response (org-roam-db-query [:select :distinct [dest]
+                                       :from links
+                                       :where (= source $s1)
+                                       :and (= type "id")
+                                       :group :by dest]
+                                      (org-roam-node-id node)))
+         (ids (mapcar #'car response)))
+    (--keep (let ((node (org-roam-node-from-id it)))
+              (when (-contains? (org-roam-node-tags node) tag)
+                node)) ids)))
+#+end_src
+
+*** Roam Buffer
+
+The unlinked references section is turned off by default for performance
+reasons, but I've never had any serious issues with it. Let's turn that on, and
+also make sure backlinks are unique.
+
+#+begin_src emacs-lisp
+(after! org-roam
+  (setq +org-roam-auto-backlinks-buffer t
+        org-roam-mode-sections
+        '((org-roam-backlinks-section :unique t)
+          org-roam-reflinks-section
+          org-roam-unlinked-references-section)))
+#+end_src
+
+*** Roam Capture
+
+Creating new nodes should be quick and easy, so we should stick to one template
+to avoid the hassle of choosing.
+
+#+begin_src emacs-lisp
+(defun org-roam-node-file-maybe (node &optional dir)
+  "Get file name from NODE, or return a default filename in directory DIR."
+  (unless dir (setq dir org-roam-directory))
+  (or (org-roam-node-file node)
+      (expand-file-name (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
+                        dir)))
+
+(defun org-roam-node-file-maybe-pick-dir (node)
+  "Get file name from NODE, or ask for directory and return a default filename."
+  (or (org-roam-node-file node)
+      (expand-file-name (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
+                        (read-directory-name "Directory: " org-roam-directory))))
+
+
+(after! org-roam
+  (setq org-roam-capture-templates
+        '(("d" "Default" plain "%?"
+           :target (file+head "${file-maybe-pick-dir}"
+                              "#+title: ${title}\n#+filetags:")
+           :unnarrowed t))
+        org-roam-dailies-capture-templates
+        '(("d" "Default" entry "* %?"
+           :target (file+head "%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>")))))
+#+end_src
+
+*** Roam Links
+
+Making links to Roam nodes is a bit finicky. This helps fix some of that.
+
+#+begin_src emacs-lisp
+(defun org-roam-completion (&optional arg)
+  (let ((node (org-roam-node-read nil nil nil t)))
+    (concat "id:" (org-roam-node-id node))))
+
+(defun org-roam-insert-description (idstr)
+  (org-roam-node-title (org-roam-node-from-id (substring idstr 3))))
+
+(after! org
+  (org-link-set-parameters "roam"
+                           :complete #'org-roam-completion
+                           :insert-description #'org-roam-insert-description))
+#+end_src
+
 ** TODO Capture Templates
 
 #+begin_src emacs-lisp
@@ -2580,19 +2691,6 @@ The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I
 want to open my agenda, it's to see my "preferred" view.
 
 #+begin_src emacs-lisp
-(defun ~/org-roam-get-linked-nodes (node tag)
-  "Return the nodes that NODE links to that are tagged with TAG."
-  (let* ((response (org-roam-db-query [:select :distinct [dest]
-                                       :from links
-                                       :where (= source $s1)
-                                       :and (= type "id")
-                                       :group :by dest]
-                                      (org-roam-node-id node)))
-         (ids (mapcar #'car response)))
-    (--keep (let ((node (org-roam-node-from-id it)))
-              (when (-contains? (org-roam-node-tags node) tag)
-                node)) ids)))
-
 (defun ~/org-agenda-section-by-link (prefix tag item)
   "Org super-agenda function to categorize agenda entries by linked node with TAG."
   (when-let* ((marker (org-super-agenda--get-marker item))
@@ -2772,63 +2870,6 @@ entry:
 (map! :leader
       :desc "Journal"
       "o j" #'+org/org-journal-open-latest)
-#+end_src
-
-** Org Roam
-
-#+call: confpkg()
-
-I'm still in the middle of developing my workflow with =org-roam=. Here's what I
-have so far.
-
-#+begin_src emacs-lisp
-(defun org-roam-node-file-maybe (node &optional dir)
-  "Get file name from NODE, or return a default filename in directory DIR."
-  (unless dir (setq dir org-roam-directory))
-  (or (org-roam-node-file node)
-      (expand-file-name (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
-                        dir)))
-
-(defun org-roam-node-file-maybe-pick-dir (node)
-  "Get file name from NODE, or ask for directory and return a default filename."
-  (or (org-roam-node-file node)
-      (expand-file-name (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
-                        (read-directory-name "Directory: " org-roam-directory))))
-
-
-(after! org-roam
-  (setq +org-roam-auto-backlinks-buffer t
-        org-roam-mode-sections
-        '((org-roam-backlinks-section :unique t)
-          org-roam-reflinks-section
-          org-roam-unlinked-references-section)
-        org-roam-capture-templates
-        '(("d" "Default" plain "%?"
-           :target (file+head "${file-maybe-pick-dir}"
-                              "#+title: ${title}\n#+filetags:")
-           :unnarrowed t))
-        org-roam-dailies-capture-templates
-        '(("d" "Default" entry "* %?"
-           :target (file+head "%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>")))))
-#+end_src
-
-*** Roam Links
-
-Making links to Roam nodes is a bit finicky. This helps fix some of that.
-
-#+begin_src emacs-lisp
-(defun org-roam-completion (&optional arg)
-  (let ((node (org-roam-node-read nil nil nil t)))
-    (concat "id:" (org-roam-node-id node))))
-
-(defun org-roam-insert-description (idstr)
-  (org-roam-node-title (org-roam-node-from-id (substring idstr 3))))
-
-(after! org
-  (org-link-set-parameters "roam"
-                           :complete #'org-roam-completion
-                           :insert-description #'org-roam-insert-description))
 #+end_src
 
 * Languages and Modes
