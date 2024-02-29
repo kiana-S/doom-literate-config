@@ -2696,8 +2696,11 @@ want to open my agenda, it's to see my "preferred" view.
   (when-let* ((marker (org-super-agenda--get-marker item))
               (node (org-super-agenda--when-with-marker-buffer marker
                       (org-roam-node-at-point)))
-              (link (car-safe (~/org-roam-get-linked-nodes node tag))))
-    (concat prefix (org-roam-node-title link))))
+              (links (~/org-roam-get-linked-nodes node tag)))
+    (->> links
+         (mapcar #'org-roam-node-title)
+         (-interpose ", ")
+         (apply #'concat prefix))))
 
 (after! org
   (setq org-agenda-custom-commands
