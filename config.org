@@ -2376,11 +2376,6 @@ doesn't mean everyone would have the time or patience to make it work.
 
 ;; Bindings
 (map! :after org
-      :map evil-org-mode-map
-      :i "TAB" #'indent-for-tab-command
-      :i "<tab>" #'indent-for-tab-command)
-
-(map! :after org
       :map org-mode-map
       :localleader
       "N" #'org-num-mode
@@ -2683,7 +2678,8 @@ parsing my todos easier, so we'll use ~org-super-agenda~:
   (let ((inhibit-message t))
     (org-super-agenda-mode))
 
-  ;; This map causes evil bindings to not work while on super agenda headers
+  ;; This map is unnecessary and causes evil bindings to not work
+  ;; while on super agenda headers
   (setq org-super-agenda-header-map nil))
 #+end_src
 
