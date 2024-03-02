@@ -2,7 +2,7 @@
 #+author: tokinanpa
 #+email: kiana.a.sheibani@gmail.com
 #+property: header-args:elisp :results replace :exports code
-#+property: header-args :tangle no :results silent :eval no-export
+#+property: header-args :tangle no :results silent :eval no-export :mkdirp yes
 
 * Introduction
 
@@ -436,7 +436,7 @@ for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
                 :package-statements nil)
           confpkg--list)
     (format-spec
-     "#+begin_src emacs-lisp :tangle %f :mkdirp yes :noweb no-export :noweb-ref none :comments no
+     "#+begin_src emacs-lisp :tangle %f :noweb no-export :noweb-ref none :comments no
 <<confpkg-template>>
 ,#+end_src"
      `((?n . ,confpkg--num)
@@ -1013,9 +1013,6 @@ This is mostly config settings that don't belong to any particular package and
 aren't important enough to get their own major section.
 
 ** Sensible Settings
-:PROPERTIES:
-:header-args:emacs-lisp: :noweb no-export :tangle no :noweb-ref config-settings
-:END:
 
 #+call: confpkg("Settings")
 
