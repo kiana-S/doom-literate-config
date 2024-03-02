@@ -2915,17 +2915,6 @@ lot of configuration for programming languages. I suppose that this is because
 language packages tend to not need much configuration, as the bounds of what a
 language mode needs to do are typically defined by the language itself.
 
-** Haskell
-
-#+call: confpkg("!Mode haskell")
-
-Operators being in italics looks ugly, so let's fix that.
-
-#+begin_src emacs-lisp
-(after! haskell-mode
-  (custom-set-faces! '(haskell-operator-face :slant normal)))
-#+end_src
-
 ** Dired
 
 #+call: confpkg("!Mode dired")
@@ -2946,4 +2935,103 @@ I like having ~auto-fill-mode~ on while writing text:
 
 #+begin_src emacs-lisp
 (add-hook! text-mode #'auto-fill-mode)
+#+end_src
+
+** Haskell
+
+#+call: confpkg("!Mode haskell")
+
+Operators being in italics looks ugly, so let's fix that.
+
+#+begin_src emacs-lisp
+(after! haskell-mode
+  (custom-set-faces! '(haskell-operator-face :slant normal)))
+#+end_src
+
+** TODO Idris
+:PROPERTIES:
+:header-args:emacs-lisp: :noweb-ref idris-config
+:END:
+
+Idris's support for Emacs is still experimental and has a few kinks to work out,
+especially since I'm using Idris 2, which the recommended =idris-mode= needs to be
+configured to use.
+
+The Doom module is very outdated, so I'll be overriding it.
+
+#+begin_src emacs-lisp :tangle modules/lang/idris/packages.el :noweb-ref none
+;; -*- no-byte-compile: t; -*-
+;;; lang/idris/packages.el
+
+(package! idris-mode)
+#+end_src
+
+#+begin_src emacs-lisp :tangle modules/lang/idris/config.el :noweb yes :noweb-ref none :exports none
+;;; -*- lexical-binding: t; -*-
+;;; lang/idris/config.el
+
+<<idris-config>>
+#+end_src
+
+*** Config
+
+#+begin_src emacs-lisp
+(after! idris-mode
+  (setq idris-interpreter-path "idris2"
+        idris-repl-banner-functions
+          '(idris-repl-text-banner) ; No fun allowed
+        idris-repl-show-repl-on-startup nil ; Don't show repl on startup
+        )
+
+  (add-hook! idris-mode #'turn-on-idris-simple-indent)
+  (add-hook! idris-mode :append #'lsp!)
+
+  (set-repl-handler! 'idris-mode (cmd! (idris-repl-buffer)))
+  (set-lookup-handlers! 'idris-mode
+    :documentation #'idris-docs-at-point)
+
+  (map! :localleader
+        :mode idris-mode
+        "q" #'idris-quit
+        "l" #'idris-load-file
+        "t" #'idris-type-at-point
+        "a" #'idris-add-clause
+        "e" #'idris-make-lemma
+        "c" #'idris-case-dwim
+        "w" #'idris-make-with-block
+        "m" #'idris-add-missing
+        "p" #'idris-proof-search
+        "h" #'idris-docs-at-point
+        (:prefix ("i" . "ipkg")
+                 "f" #'idris-open-package-file
+                 "b" #'idris-ipkg-build
+                 "c" #'idris-ipkg-clean
+                 "i" #'idris-ipkg-install))
+
+  (map! :localleader
+        :mode idris-ipkg-mode
+        "b" #'idris-ipkg-build
+        "c" #'idris-ipkg-clean
+        "i" #'idris-ipkg-install
+        "f" #'idris-ipkg-insert-field))
+    #+end_src
+
+*** Appearance
+
+Operators being in italics looks ugly in this mode too, but unfortunately due to
+Idris's more complicated syntax highlighting system we have to do a bit more
+work than for Haskell. There's also the issue of the semantic highlighting
+faces, which don't match our theme colors.
+
+#+begin_src emacs-lisp
+(after! idris-mode
+  (custom-set-faces!
+    '((idris-operator-face idris-colon-face idris-equals-face) :slant normal)
+
+    ;; Semantic highlighting
+    `(idris-semantic-type-face :foreground ,(doom-color 'blue))
+    `(idris-semantic-data-face :foreground ,(doom-color 'red))
+    `(idris-semantic-bound-face :foreground ,(doom-color 'magenta) :slant italic)
+    `(idris-semantic-function-face :foreground ,(doom-color 'dark-green))
+    `(idris-semantic-postulate-face :foreground ,(doom-color 'yellow))))
 #+end_src
