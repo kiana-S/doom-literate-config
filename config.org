@@ -69,9 +69,9 @@ My first Doom Emacs config was hacked together directly from the generated
 example config: no comments, no organization, nothing. ~after!~ and ~use-package!~
 blocks were scattered about the file without rhyme or reason, making it very
 difficult to remember what any particular line of code was actually doing. I was
-able to mitigate some of this issue by sorting my config into multiple files,
-but at the end of the day it was a losing battle. The config directory was at
-1200 lines of code before I decided that something needed to be done.
+able to mitigate some of this issue by categorizing my config into multiple
+files, but at the end of the day it was a losing battle. The config directory
+was at 1200 lines of code before I decided that something needed to be done.
 
 I was considering what to do about this problem of organizational decay when I
 came across [[https://tecosaur.github.io/emacs-config/config.html][Tecosaur's config]] and learned about =org-mode='s literate programming
@@ -721,6 +721,21 @@ NODE defaults to the root node."
           (goto-char (point-min)))
         (pop-to-buffer buf)))))
 #+end_src
+
+** Current Issues
+
+*** Mail
+
+My mail client currently requires GPG access to sync emails, which doesn't
+properly work. Using the mail client requires running ~mbsync -a~ externally
+instead.
+
+*** Org Mode
+
+A lot of my current Org mode configuration consists of relics of previous
+organizational systems, including the TODO states and capture templates. I don't
+currently use these, as most of my Org mode use has shifted towards Org-roam, so
+it might be a good idea to replace these with something more useful.
 
 * Doom Modules
 
@@ -1965,11 +1980,11 @@ Here's some convenient leader key bindings as well:
       "c X" #'flymake-show-project-diagnostics)
 #+end_src
 
-** TODO Magit
+** Magit
 
 #+call: confpkg("!Pkg magit")
 
-*** Magit Delta
+[[https://magit.vc/][Magit]] is already great, but it could use some proper syntax highlighting!
 
 #+begin_src emacs-lisp :tangle packages.el
 (package! magit-delta)
@@ -2374,8 +2389,16 @@ doesn't mean everyone would have the time or patience to make it work.
         org-superstar-item-bullet-alist '((42 . 8226)
                                           (43 . 8226)
                                           (45 . 8226))))
+#+end_src
 
-;; Bindings
+*** Bindings
+
+**** Convenience
+
+There are a few useful functions Doom doesn't bind by default, so let's add them
+for convenience.
+
+#+begin_src emacs-lisp
 (map! :after org
       :map org-mode-map
       :localleader
