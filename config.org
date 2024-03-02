@@ -2589,8 +2589,7 @@ also make sure backlinks are unique.
 
 #+begin_src emacs-lisp
 (after! org-roam
-  (setq +org-roam-auto-backlinks-buffer t
-        org-roam-mode-sections
+  (setq org-roam-mode-sections
         '((org-roam-backlinks-section :unique t)
           org-roam-reflinks-section
           org-roam-unlinked-references-section)))
