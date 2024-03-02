@@ -1269,6 +1269,7 @@ We first need a function to build a flake reference:
 
 If IMPURE is t, then allow impure builds."
   (message "Building \"%s\" ..." out)
+  (require 's)
   (s-trim (shell-command-to-string
            (concat "nix build --no-link --print-out-paths "
                    (when impure "--impure ") out))))
@@ -1290,11 +1291,13 @@ a call to this function reuses the same NAME argument, then the
 symlink is overwritten.
 
 If IMPURE is t, then allow impure builds."
-  (let* ((gcdir "/sudo::/nix/var/nix/gcroots/emacs")
+  (let* ((gcdir "/nix/var/nix/gcroots/emacs")
          (sym (expand-file-name name gcdir))
          (path (nix-build-out-path out impure)))
-    (make-directory gcdir t)
-    (make-symbolic-link path sym t)
+    (unless (equal path (file-symlink-p sym))
+      (require 'epg)
+      (make-directory (concat "/sudo::" gcdir) t)
+      (make-symbolic-link path (concat "/sudo::" sym) t))
     path))
 #+end_src
 
@@ -1991,7 +1994,8 @@ like. Let's add a ~use-package!~ declaration to fix some of them:
   ; More accurate git status
   (setq +treemacs-git-mode 'deferred
         treemacs-python-executable
-        (concat (nix-build-out-path-gcroot "nixpkgs#python3") "/bin/python"))
+        (concat (nix-build-out-path-gcroot "treemacs-python" "nixpkgs#python3")
+                "/bin/python"))
   :config
   (setq ; Child-frame reading is broken (and sucks anyways)
         treemacs-read-string-input 'from-minibuffer
