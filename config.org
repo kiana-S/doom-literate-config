@@ -2427,6 +2427,28 @@ for convenience.
       "v" (lookup-key org-mode-map (kbd "C-c C-v")))
 #+end_src
 
+**** YASnippet
+
+By default, snippet expansion doesn't work in Org mode; when =TAB= is pressed to
+move to the next placeholder, headline visibility cycling is triggered instead.
+This is because in ~org-mode-map~ =TAB= is unconditionally bound to ~org-cycle~, and
+for some reason this has a higher precedence than YAS's keymaps.
+
+While this is a complex problem, the solution is actually rather simple: just
+remove the ~org-mode-map~ binding. The ~org-cycle~ command will still be triggered
+on =TAB= when in normal mode, as it is bound in ~evil-org-mode-map~, but when in
+insert mode (as one generally is during snippet expansion) the binding will fall
+through both maps and be handled by YASnippet.
+
+#+begin_src emacs-lisp
+(map! :after org
+      :map org-mode-map
+      "TAB" nil
+      "<tab>" nil)
+#+end_src
+
+This also means we don't need ~org-cycle~ to emulate indentation, which is nice.
+
 *** Project Links
 
 It's sometimes nice to be able to click a link in an Org file that takes me to
@@ -2624,7 +2646,10 @@ Making links to Roam nodes is a bit finicky. This helps fix some of that.
                            :insert-description #'org-roam-insert-description))
 #+end_src
 
-** TODO Capture Templates
+** Capture Templates
+
+I don't use these very often currently, and am reconsidering whether I should
+rework them entirely. These might change soon!
 
 #+begin_src emacs-lisp
 (defun ~/org-project-find-heading ()
