@@ -881,6 +881,7 @@ snippets
 :tools
 ;;ansible
 biblio
+;;collab
 ;;debugger
 direnv
 ;;docker
@@ -896,7 +897,6 @@ make
 pdf
 ;;prodigy
 ;;rgb
-;;taskrunner
 ;;terraform
 tree-sitter
 ;;tmux
