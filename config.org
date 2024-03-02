@@ -1933,6 +1933,14 @@ And just to make sure nothing else accidentally starts running:
 (package! flyspell :disable t)
 #+end_src
 
+*** Bindings
+
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Open errors buffer"
+      "c X" #'flymake-show-project-diagnostics)
+#+end_src
+
 *** Tooltips
 
 Having an IDE-style tooltip pop up is nice, but ~flymake-popon~ is a bit ugly by default.
@@ -1943,6 +1951,13 @@ Having an IDE-style tooltip pop up is nice, but ~flymake-popon~ is a bit ugly by
   (setq flymake-popon-width 120)
   ; Add visible border
   (set-face-foreground 'flymake-popon-posframe-border (doom-color 'selection)))
+#+end_src
+
+*** Popups
+
+#+begin_src emacs-lisp
+(after! flymake
+  (set-popup-rule! "^\\*Flymake" :vslot 1 :side 'bottom))
 #+end_src
 
 ** Indent Guides
@@ -1970,14 +1985,12 @@ I've found that character-based indent guides work best.
 ;; (advice-add #'lsp-avy-lens :before (cmd! (require 'avy)))
 #+end_src
 
-Here's some convenient leader key bindings as well:
+Here's a convenient leader key binding as well:
 
 #+begin_src emacs-lisp
 (map! :leader
       :desc "Select LSP code lens"
-      "c L" #'lsp-avy-lens
-      :desc "Open errors buffer"
-      "c X" #'flymake-show-project-diagnostics)
+      "c L" #'lsp-avy-lens)
 #+end_src
 
 ** Magit
