@@ -893,7 +893,7 @@ direnv
 lsp
 magit
 make
-;;pass
+pass
 pdf
 ;;prodigy
 ;;rgb
@@ -1073,7 +1073,7 @@ I don't want my cache files to get deleted whenever I mess up my Doom install,
 so let's move them to somewhere more safe.
 
 #+begin_src emacs-lisp
-(setq auth-sources '("~/.authinfo.gpg")
+(setq auth-sources '(password-store "~/.authinfo.gpg")
       auth-source-cache-expiry nil)
 #+end_src
 
@@ -2349,6 +2349,25 @@ The calendar's main purpose for me is to give a better view of the [[*Agenda][Or
 (map! :leader
       :desc "Calendar"
       "o c" #'cfw:open-org-calendar)
+#+end_src
+
+** Password Management
+
+#+call: confpkg("Pass")
+
+I use the standard Unix-style password management system, [[https://www.passwordstore.org/][pass]].
+
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Password Store"
+      "o s" #'pass)
+
+(after! password-store
+  (setq pass-show-keybindings nil      ; Keybindings take up too much space
+        pass-suppress-confirmations t  ; Quit shouldn't need a confirm step
+        )
+  ;; Move to right side
+  (set-popup-rule! "^\\*Password-Store" :side 'right :size 0.25 :quit nil))
 #+end_src
 
 * Org
