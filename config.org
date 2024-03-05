@@ -741,7 +741,7 @@ it might be a good idea to replace these with something more useful.
 
 One of Doom Emacs's most useful features is its modular configuration system,
 allowing configuration code to be sectioned into modules that can be enabled or
-customized individually. Doom provides a full suite of pre-written modules to
+customized individually. Doom provides a full suite of prewritten modules to
 enable.
 
 #+begin_src emacs-lisp :tangle init.el :noweb no-export
@@ -1048,7 +1048,7 @@ change every aspect of its function!
       scroll-margin 2                          ; A few extra lines on each end of the window
       )
 
-(global-subword-mode 1) ; Trying this out
+(global-subword-mode 1)
 #+end_src
 
 Thanks once again to Tecosaur for some of these settings.
@@ -2243,9 +2243,9 @@ what type of visual state is currently active."
 
 *** Evil Bindings
 
-I want to have evil-esque keybindings in Calc, so let's enable the
-=evil-collection= module for it. I haven't found a better way to do this than to
-edit the relevant variable in ~init.el~:
+I want to have vim keybindings in Calc, so let's enable the =evil-collection=
+module for it. I haven't found a better way to do this than to edit the relevant
+variable in ~init.el~:
 
 #+begin_src emacs-lisp :tangle init.el :noweb-ref none
 ;; Enable evil-collection-calc
@@ -3022,7 +3022,7 @@ The Doom module is very outdated, so I'll be overriding it.
 (after! idris-mode
   (setq idris-interpreter-path "idris2"
         idris-repl-banner-functions
-          '(idris-repl-text-banner) ; No fun allowed
+          '(idris-repl-text-banner) ; No fun allowed!!
         idris-repl-show-repl-on-startup nil ; Don't show repl on startup
         )
 
