@@ -2161,7 +2161,7 @@ pulses and color), so I'll override it.
 
 ** YASnippet
 
-#+call: confpkg()
+#+call: confpkg("!Pkg yasnippet")
 
 Allow nested snippets:
 
@@ -2343,9 +2343,12 @@ I use =isync=, =msmtp= and =mu= as Doom Emacs recommends.
 The calendar's main purpose for me is to give a better view of the [[*Agenda][Org agenda]].
 
 #+begin_src emacs-lisp
+(after! calendar
+  ;; Start week on Monday
+  (setq calendar-week-start-day 1))
+
 (after! calfw
-  (setq calendar-week-start-day 1) ; Start week on Monday
-  (setq cfw:org-face-agenda-item-foreground-color (doom-color 'magenta)))
+  (setq cfw:org-face-agenda-item-foreground-color (doom-color 'yellow)))
 
 (map! :leader
       :desc "Calendar"
