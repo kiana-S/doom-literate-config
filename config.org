@@ -7,9 +7,7 @@
 * Introduction
 
 #+begin_quote
-Emacs outshines all other editing software in approximately the same way that
-the noonday sun does the stars. It is not just bigger and brighter; it simply
-makes everything else vanish.
+Emacs outshines all other editing software in approximately the same way that the noonday sun does the stars. It is not just bigger and brighter; it simply makes everything else vanish.
 
   -- Neil Stephenson, /In the Beginning was the Command Line/ (1998)
 #+end_quote
@@ -20,86 +18,49 @@ This is a literate configuration for [[https:github.com/doomemacs/doomemacs][Doo
 
 ** Background; or, My Emacs Story
 
-Given that you are currently reading an Emacs config, I will assume that you
-already have a moderate understanding of what Emacs is and the ideas behind its
-configuration system. If you do not, then [[https://docs.doomemacs.org/v21.12/#/users/intro/why-emacs][this section]] of the official Doom
-Emacs documentation makes for a decent introduction.
+Given that you are currently reading an Emacs config, I will assume that you already have a moderate understanding of what Emacs is and the ideas behind its configuration system. If you do not, then [[https://docs.doomemacs.org/v21.12/#/users/intro/why-emacs][this section]] of the official Doom Emacs documentation makes for a decent introduction.
 
-Rather than use this space to explain Emacs, I will instead use it to chronicle
-my history with Emacs, how I got here, and what lessons should be taken away
-from this experience. Don't worry, I promise it won't be long.
+Rather than use this space to explain Emacs, I will instead use it to chronicle my history with Emacs, how I got here, and what lessons should be taken away from this experience. Don't worry, I promise it won't be long.
 
 *** In The Beginning
 
-My first brush with Emacs was in around 2019, when I installed it for use with
-the proof assistant language Agda. I had vaguely heard tales about its beauty
-and power, but I was nowhere near comfortable enough with config files and
-programming in general to fully appreciate its capabilities (not to mention that
-I was using Windows at the time). I bounced off of it pretty quickly because...
-well, vanilla Emacs is just kinda terrible.
+My first brush with Emacs was in around 2019, when I installed it for use with the proof assistant language Agda. I had vaguely heard tales about its beauty and power, but I was nowhere near comfortable enough with config files and programming in general to fully appreciate its capabilities (not to mention that I was using Windows at the time). I bounced off of it pretty quickly because... well, vanilla Emacs is just kinda terrible.
 
 #+caption[Vanilla Emacs]: Look at this and tell me that it doesn't look at least a little awful.
 #+name: vanilla-emacs
 [[file:assets/vanilla_emacs.png]]
 
-A few years later in 2022, after I had moved to the more sensible OS of Arch
-Linux, I discovered that my preferred text editor [[https://atom-editor.cc/][Atom]] was in the process of
-being discontinued and began to look for a replacement. I tried Visual Studio
-Code for a little while, but after some serious use I became dissatisfied with
-how few options there were to customize it to fit my workflow.
+A few years later in 2022, after I had moved to the more sensible OS of Arch Linux, I discovered that my preferred text editor [[https://atom-editor.cc/][Atom]] was in the process of being discontinued and began to look for a replacement. I tried Visual Studio Code for a little while, but after some serious use I became dissatisfied with how few options there were to customize it to fit my workflow.
 
-It was at this point that I started thinking about Emacs again. By chance, I
-happened to stumble upon Doom Emacs, and it turned out to be exactly what I was
-looking for:
+It was at this point that I started thinking about Emacs again. By chance, I happened to stumble upon Doom Emacs, and it turned out to be exactly what I was looking for:
 
 - Extreme flexibility
 - Robust modular configuration system
 - Sensible defaults
 - Extensive ecosystem
 
-As I became more comfortable with configuration via scripting, I immersed myself
-into the many utilities that make up the Emacs ecosystem: =org-mode=, =calfw=, =calc=,
-=mu4e=. I started putting more and more time into tweaking these applications to
-fit my needs, my files kept getting longer and longer, and eventually I fully
-fell off the deep end and now we're here.
+As I became more comfortable with configuration via scripting, I immersed myself into the many utilities that make up the Emacs ecosystem: =org-mode=, =calfw=, =calc=, =mu4e=. I started putting more and more time into tweaking these applications to fit my needs, my files kept getting longer and longer, and eventually I fully fell off the deep end and now we're here.
 
 *** TODO Literate Programming
 
-My first Doom Emacs config was hacked together directly from the generated
-example config: no comments, no organization, nothing. ~after!~ and ~use-package!~
-blocks were scattered about the file without rhyme or reason, making it very
-difficult to remember what any particular line of code was actually doing. I was
-able to mitigate some of this issue by categorizing my config into multiple
-files, but at the end of the day it was a losing battle. The config directory
-was at 1200 lines of code before I decided that something needed to be done.
+My first Doom Emacs config was hacked together directly from the generated example config: no comments, no organization, nothing. ~after!~ and ~use-package!~ blocks were scattered about the file without rhyme or reason, making it very difficult to remember what any particular line of code was actually doing. I was able to mitigate some of this issue by categorizing my config into multiple files, but at the end of the day it was a losing battle. The config directory was at 1200 lines of code before I decided that something needed to be done.
 
-I was considering what to do about this problem of organizational decay when I
-came across [[https://tecosaur.github.io/emacs-config/config.html][Tecosaur's config]] and learned about =org-mode='s literate programming
-support. I had been using =org-mode= for several months at this point and was very
-comfortable with it, so utilizing it to better organize my code seemed like a
-good idea.
+I was considering what to do about this problem of organizational decay when I came across [[https://tecosaur.github.io/emacs-config/config.html][Tecosaur's config]] and learned about =org-mode='s literate programming support. I had been using =org-mode= for several months at this point and was very comfortable with it, so utilizing it to better organize my code seemed like a good idea.
 
 *** =confpkg=
 
-As part of their literate config, Tecosaur implemented =confpkg=, an embedded
-Emacs Lisp library that manages multiple aspects of config tangling:
+As part of their literate config, Tecosaur implemented =confpkg=, an embedded Emacs Lisp library that manages multiple aspects of config tangling:
 
 - Controlling what files each code block is tangled to
 - Generating package files from templates
 - Automatically detecting cross-section dependencies
 - Reporting profiling information on config load times
 
-It's an incredibly impressive utility, and I highly recommend reading
-[[https://tecosaur.github.io/emacs-config/config.html#rudimentary-configuration-confpkg][the section in their config]] on its design. I tried to read through it myself,
-but I don't understand half of it; it's a bizarre mixture of exploits to hook
-into =org-mode='s tangling process, self-modifying buffer shenanigans, and abuse
-of various features of =org-babel=.
+It's an incredibly impressive utility, and I highly recommend reading [[https://tecosaur.github.io/emacs-config/config.html#rudimentary-configuration-confpkg][the section in their config]] on its design. I tried to read through it myself, but I don't understand half of it; it's a bizarre mixture of exploits to hook into =org-mode='s tangling process, self-modifying buffer shenanigans, and abuse of various features of =org-babel=.
 
-Luckily, I don't need to be able to understand code in order to do what I do
-best: press =Ctrl+C= and =Ctrl+V= in that order. Programming!
+Luckily, I don't need to be able to understand code in order to do what I do best: press =Ctrl+C= and =Ctrl+V= in that order. Programming!
 
-If you're reading the raw org file instead of the published version, the code
-for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
+If you're reading the raw org file instead of the published version, the code for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
 
 - Prevent the code from being exported
 - Reorganize to get rid of superfluous noweb references
@@ -726,23 +687,15 @@ NODE defaults to the root node."
 
 *** Mail
 
-My mail client currently requires GPG access to sync emails, which doesn't
-properly work. Using the mail client requires running ~mbsync -a~ externally
-instead.
+My mail client currently requires GPG access to sync emails, which doesn't properly work. Using the mail client requires running ~mbsync -a~ externally instead.
 
 *** Org Mode
 
-A lot of my current Org mode configuration consists of relics of previous
-organizational systems, including the TODO states and capture templates. I don't
-currently use these, as most of my Org mode use has shifted towards Org-roam, so
-it might be a good idea to replace these with something more useful.
+A lot of my current Org mode configuration consists of relics of previous organizational systems, including the TODO states and capture templates. I don't currently use these, as most of my Org mode use has shifted towards Org-roam, so it might be a good idea to replace these with something more useful.
 
 * Doom Modules
 
-One of Doom Emacs's most useful features is its modular configuration system,
-allowing configuration code to be sectioned into modules that can be enabled or
-customized individually. Doom provides a full suite of prewritten modules to
-enable.
+One of Doom Emacs's most useful features is its modular configuration system, allowing configuration code to be sectioned into modules that can be enabled or customized individually. Doom provides a full suite of prewritten modules to enable.
 
 #+begin_src emacs-lisp :tangle init.el :noweb no-export
 ;;; init.el -*- lexical-binding: t; -*-
@@ -779,8 +732,7 @@ enable.
 
 ** Config Modules
 
-Considering this is a literate config, the corresponding ~:config literate~ module
-is necessary. We'll also turn on some of the default config options too.
+Considering this is a literate config, the corresponding ~:config literate~ module is necessary. We'll also turn on some of the default config options too.
 
 #+name: doom-config
 #+begin_src emacs-lisp
@@ -791,8 +743,7 @@ literate
 
 ** Completion
 
-I'm a big fan of the Vertico ecosystem, as it's lightweight and easy to use.
-Let's turn on that module, along with the icons flag because why not.
+I'm a big fan of the Vertico ecosystem, as it's lightweight and easy to use. Let's turn on that module, along with the icons flag because why not.
 
 #+name: doom-completion
 #+begin_src emacs-lisp
@@ -803,12 +754,9 @@ Let's turn on that module, along with the icons flag because why not.
 
 ** Checkers
 
-The two most common syntax checking engines seem to be =flymake= and =flycheck=.
-=flymake= is built in to Emacs, is generally faster and currently has better
-support in the ecosystem, so let's use that one.
+The two most common syntax checking engines seem to be =flymake= and =flycheck=. =flymake= is built in to Emacs, is generally faster and currently has better support in the ecosystem, so let's use that one.
 
-We'll also enable a dedicated spell checking module using ~aspell~, as that seems
-to be the recommended option.
+We'll also enable a dedicated spell checking module using ~aspell~, as that seems to be the recommended option.
 
 #+name: doom-checkers
 #+begin_src emacs-lisp
@@ -820,8 +768,7 @@ to be the recommended option.
 
 ** UI
 
-Most of these are either defaults that come with Doom Emacs or just recommended,
-but here are the highlights:
+Most of these are either defaults that come with Doom Emacs or just recommended, but here are the highlights:
 
 - ~vi-tilde-fringe~ because I like how it looks
 - ~(window-select +numbers)~ because multiple windows are too inconvenient without
@@ -873,7 +820,7 @@ fold
 ;;parinfer
 ;;rotate-text
 snippets
-;;word-wrap
+word-wrap
 #+end_src
 
 #+name: doom-tools
@@ -949,8 +896,7 @@ everywhere
 
 ** Language Modules
 
-Doom Emacs provides a large collection of modules for different languages. Which
-is good, because setting up language mode packages is kind of annoying.
+Doom Emacs provides a large collection of modules for different languages. Which is good, because setting up language mode packages is kind of annoying.
 
 #+name: doom-lang
 #+begin_src emacs-lisp
@@ -1024,15 +970,13 @@ yaml
 
 * Basic Configuration
 
-This is mostly config settings that don't belong to any particular package and
-aren't important enough to get their own major section.
+This is mostly config settings that don't belong to any particular package and aren't important enough to get their own major section.
 
 ** Sensible Settings
 
 #+call: confpkg("Settings")
 
-It wouldn't be Emacs if there wasn't an endless list of config variables to
-change every aspect of its function!
+It wouldn't be Emacs if there wasn't an endless list of config variables to change every aspect of its function!
 
 #+begin_src emacs-lisp
 (setq-default tab-width 2                      ; 2 width tabs
@@ -1057,8 +1001,7 @@ Thanks once again to Tecosaur for some of these settings.
 
 #+call: confpkg()
 
-Emacs uses this basic personal information for a few different things, mostly
-applications.
+Emacs uses this basic personal information for a few different things, mostly applications.
 
 #+begin_src emacs-lisp
 (setq user-full-name "Kiana Sheibani"
@@ -1069,8 +1012,7 @@ applications.
 
 #+call: confpkg("Auth")
 
-I don't want my cache files to get deleted whenever I mess up my Doom install,
-so let's move them to somewhere more safe.
+I don't want my cache files to get deleted whenever I mess up my Doom install, so let's move them to somewhere more safe.
 
 #+begin_src emacs-lisp
 (require 'auth-source-pass)
@@ -1082,25 +1024,20 @@ so let's move them to somewhere more safe.
 
 #+call: confpkg("Visual")
 
-My favorite color theme has always been Tokyo Night. I use it literally
-everywhere I can, and Doom Emacs is no exception.
+My favorite color theme has always been Tokyo Night. I use it literally everywhere I can, and Doom Emacs is no exception.
 
 #+begin_src emacs-lisp
 (setq doom-theme 'doom-tokyo-night)
 #+end_src
 
-As for font choice, Victor Mono is my preferred coding font. I also use Source
-Sans Pro as my sans-serif font, though that is more out of obligation than
-actually liking how it looks.
+As for font choice, Victor Mono is my preferred coding font. I also use Source Sans Pro as my sans-serif font, though that is more out of obligation than actually liking how it looks.
 
 #+begin_src emacs-lisp
 (setq doom-font (font-spec :family "VictorMono" :size 13)
       doom-variable-pitch-font (font-spec :family "Source Sans Pro" :size 16))
 #+end_src
 
-I'm a very big fan of how italics look in this font, so let's make more things
-italicized! While we're here, we'll also set doom's modified buffer font to be
-red instead of yellow (I like how it looks better).
+I'm a very big fan of how italics look in this font, so let's make more things italicized! While we're here, we'll also set doom's modified buffer font to be red instead of yellow (I like how it looks better).
 
 #+begin_src emacs-lisp
 (custom-set-faces!
@@ -1123,9 +1060,7 @@ Some other small aesthetic changes:
 
 *** Windows & Workspaces
 
-I like using window numbers to navigate between splitscreen windows, but having
-to type =SPC w <#>= every time is annoying. Let's shorten that key sequence by
-67%, and also throw in a convenient binding for switching to =treemacs=.
+I like using window numbers to navigate between splitscreen windows, but having to type =SPC w <#>= every time is annoying. Let's shorten that key sequence by 67%, and also throw in a convenient binding for switching to =treemacs=.
 
 #+begin_src emacs-lisp
 (map! :leader
@@ -1146,8 +1081,7 @@ to type =SPC w <#>= every time is annoying. Let's shorten that key sequence by
 
 Now =SPC 1= will work equivalently to =SPC w 1=. Efficiency!
 
-I like to reorganize my workspaces, so we can also add bindings to change the
-workspace order.
+I like to reorganize my workspaces, so we can also add bindings to change the workspace order.
 
 #+begin_src emacs-lisp
 (map! :leader
@@ -1159,16 +1093,14 @@ workspace order.
 
 *** Leader Key
 
-It's sometimes useful to have a ~universal-argument~ binding that doesn't go
-through the leader key.
+It's sometimes useful to have a ~universal-argument~ binding that doesn't go through the leader key.
 
 #+begin_src emacs-lisp
 (map! :map global-map
       "M-u" #'universal-argument)
 #+end_src
 
-It's also sometimes useful to have an ~evil-ex~ binding that /does/ go through the
-leader key.
+It's also sometimes useful to have an ~evil-ex~ binding that /does/ go through the leader key.
 
 #+begin_src emacs-lisp
 (map! :leader
@@ -1178,9 +1110,7 @@ leader key.
 
 *** Evil Macros
 
-Seeing as it's practically the Evil Emacs version of =C-g=, I often end up
-accidentally pressing =q= in a non-popup buffer, which starts recording a macro.
-That's very annoying, and I don't use macros enough to justify that annoyance.
+Seeing as it's practically the Evil Emacs version of =C-g=, I often end up accidentally pressing =q= in a non-popup buffer, which starts recording a macro. That's very annoying, and I don't use macros enough to justify that annoyance.
 
 #+begin_src emacs-lisp
 (map! :map evil-normal-state-map
@@ -1190,9 +1120,7 @@ That's very annoying, and I don't use macros enough to justify that annoyance.
 
 *** Creating New Projects
 
-Whenever I want to make a new project, having to create a new directory,
-initialize Git, and register it with Projectile is cumbersome. A new command to
-do all of those steps in one go sounds like a good idea.
+Whenever I want to make a new project, having to create a new directory, initialize Git, and register it with Projectile is cumbersome. A new command to do all of those steps in one go sounds like a good idea.
 
 #+begin_src emacs-lisp
 (defun create-new-project (dir type &optional parents)
@@ -1240,8 +1168,7 @@ If PARENTS is non-nil, the parents of the specified directory will also be creat
 
 *** ... This is Also Here
 
-I'm not even going to bother explaining this one. Emacs is just janky sometimes
-lol
+I'm not even going to bother explaining this one. Emacs is just janky sometimes lol
 
 #+begin_src emacs-lisp
 (defadvice! ~/projectile-find-file (invalidate-cache &optional ff-variant)
@@ -1257,23 +1184,43 @@ lol
       (run-hooks 'projectile-find-file-hook))))
 #+end_src
 
+** Line Wrapping
+
+#+call: confpkg("Line Wrapping")
+
+I have rather specific tastes when it comes to line wrapping. I like soft line wrapping (~visual-line-mode~), but I want it to be as seamless as possible.
+
+#+begin_src emacs-lisp
+(setq +word-wrap-fill-style 'soft) ; Soft line wrapping
+(setq-default fill-column 90)      ; More space before wrap
+#+end_src
+
+Evil Emacs is normally quite unwieldy to use with soft line wrapping, so let's fix that:
+
+#+begin_src emacs-lisp
+(use-package! evil
+  :init
+  (setq evil-respect-visual-line-mode t))
+#+end_src
+
+When a buffer has line numbers, they can interfere with the margins and make them smaller than they need to be.
+
+#+begin_src emacs-lisp
+(add-hook! display-line-numbers-mode
+  (setq-local visual-fill-column-extra-text-width '(0 . 6))
+  (visual-fill-column--adjust-window))
+#+end_src
+
 ** Automated Nix Builds
 
 #+call: confpkg("Nix")
 
-Some packages in this config such as =treemacs=, =org-roam=, etc. require certain
-tools to be in the environment. On a Nix-based system, there are a few different
-ways to handle this:
+Some packages in this config such as =treemacs=, =org-roam=, etc. require certain tools to be in the environment. On a Nix-based system, there are a few different ways to handle this:
 
-1. Put that tool in the actual environment, e.g. in a profile. This makes sense
-   for simple things (=ripgrep=, =sqlite=, etc) but for more opinionated things like
-   an instance of Python it becomes less desirable.
-2. Build the tool and put a symlink to the output somewhere, e.g. in the HOME
-   directory. This avoids polluting the environment, but you still have to deal
-   with an unwieldy symlink that breaks Emacs if you accidentally delete it.
+1. Put that tool in the actual environment, e.g. in a profile. This makes sense for simple things (=ripgrep=, =sqlite=, etc) but for more opinionated things like an instance of Python it becomes less desirable.
+2. Build the tool and put a symlink to the output somewhere, e.g. in the HOME directory. This avoids polluting the environment, but you still have to deal with an unwieldy symlink that breaks Emacs if you accidentally delete it.
    This was my approach before coming up with the third option:
-3. Build the tool and point Emacs directly to the store path. This is the
-   simplest solution, but requires the most complex Emacs configuration.
+3. Build the tool and point Emacs directly to the store path. This is the simplest solution, but requires the most complex Emacs configuration.
 
 This section is an implementation of that third solution.
 
@@ -1291,11 +1238,7 @@ If IMPURE is t, then allow impure builds."
                    (when impure "--impure ") out))))
 #+end_src
 
-This works well enough if we just want to build something, but there's a
-problem: we haven't indicated to Nix that we want this output to stick around,
-so it will be deleted the next time we garbage collect. To fix this, we can
-write a wrapper function that also makes the output path a garbage collection
-root.
+This works well enough if we just want to build something, but there's a problem: we haven't indicated to Nix that we want this output to stick around, so it will be deleted the next time we garbage collect. To fix this, we can write a wrapper function that also makes the output path a garbage collection root.
 
 #+begin_src emacs-lisp
 (defun nix-build-out-path-gcroot (name out &optional impure)
@@ -1319,8 +1262,7 @@ If IMPURE is t, then allow impure builds."
 
 * Packages
 
-Now that we've enabled our preferred modules and done some basic configuration,
-we can install and configure our packages.
+Now that we've enabled our preferred modules and done some basic configuration, we can install and configure our packages.
 
 Our ~package!~ declarations go in ~packages.el~, which must not be byte-compiled:
 
@@ -1328,8 +1270,7 @@ Our ~package!~ declarations go in ~packages.el~, which must not be byte-compiled
 ;; -*- no-byte-compile: t; -*-
 #+end_src
 
-Everything else goes in ~config.el~, which is managed by [[*=confpkg=][confpkg]] as outlined
-earlier.
+Everything else goes in ~config.el~, which is managed by [[*=confpkg=][confpkg]] as outlined earlier.
 
 ** Company
 
@@ -1339,10 +1280,7 @@ earlier.
 
 *** Bindings
 
-When Company is active, its keybindings overshadow the default ones, meaning
-keys like =RET= no longer work. To prevent this from happening, let's rebind
-~company-complete-selection~ to =TAB= (less useful in the middle of typing), and
-only allow =RET= to be used if Company has been explicitly interacted with.
+When Company is active, its keybindings overshadow the default ones, meaning keys like =RET= no longer work. To prevent this from happening, let's rebind ~company-complete-selection~ to =TAB= (less useful in the middle of typing), and only allow =RET= to be used if Company has been explicitly interacted with.
 
 #+begin_src emacs-lisp
 (after! company
@@ -1362,9 +1300,7 @@ only allow =RET= to be used if Company has been explicitly interacted with.
 
 #+call: confpkg("!Pkg company-spell")
 
-I've been having problems with ~company-ispell~, mainly due to Ispell requiring a
-text-based dictionary (unlike Aspell, which uses a binary dictionary). So let's
-switch to ~company-spell~:
+I've been having problems with ~company-ispell~, mainly due to Ispell requiring a text-based dictionary (unlike Aspell, which uses a binary dictionary). So let's switch to ~company-spell~:
 
 #+begin_src emacs-lisp :tangle packages.el
 (package! company-spell)
@@ -1386,8 +1322,7 @@ We should make sure that ~company-spell~ uses Ispell's personal dictionary too:
 
 *** Icons
 
-The ~company-box~ front-end adds support for icons, but there aren't many
-providers for them, especially in text. We'll add two new icon providers:
+The ~company-box~ front-end adds support for icons, but there aren't many providers for them, especially in text. We'll add two new icon providers:
 
 - ~~/company-box-icons--text~, which directly targets the output of ~company-spell~
 - ~~/company-box-icons--spell~, which is a fallback for all text completions
@@ -1419,8 +1354,7 @@ providers for them, especially in text. We'll add two new icon providers:
 
 #+call: confpkg("!Pkg eldoc")
 
-We'll switch the default docstring handler to ~eldoc-documentation-compose~, since
-that provides the most information and I don't mind the space it takes up.
+We'll switch the default docstring handler to ~eldoc-documentation-compose~, since that provides the most information and I don't mind the space it takes up.
 
 #+begin_src emacs-lisp
 (after! eldoc
@@ -1431,8 +1365,7 @@ that provides the most information and I don't mind the space it takes up.
 
 #+call: confpkg("!Pkg marginalia")
 
-Marginalia mostly works fine on its own, but we should add a few more
-Doom-specific prompt categories to its registry.
+Marginalia mostly works fine on its own, but we should add a few more Doom-specific prompt categories to its registry.
 
 #+begin_src emacs-lisp
 (after! marginalia
@@ -1450,23 +1383,17 @@ Doom-specific prompt categories to its registry.
   (setf (alist-get #'projectile-switch-project marginalia-command-categories nil t) nil))
 #+end_src
 
-These new categories can then be used to define [[*Keymaps][Embark keymaps]] for minibuffer
-completion.
+These new categories can then be used to define [[*Keymaps][Embark keymaps]] for minibuffer completion.
 
 ** Embark
 
 #+call: confpkg("!Pkg embark")
 
-When I first learned about Embark and began to use it, I was a bit disappointed
-by its defaults, especially since Doom Emacs is normally great when it comes to
-ensuring good defaults. I eventually went ahead and looked through every aspect
-of Embark to see what needed to change.
+When I first learned about Embark and began to use it, I was a bit disappointed by its defaults, especially since Doom Emacs is normally great when it comes to ensuring good defaults. I eventually went ahead and looked through every aspect of Embark to see what needed to change.
 
 *** Targets
 
-Some of the targeting functions are a bit too general in what they accept. We'll
-adjust the expression and identifier targeters to only work in ~prog-mode~ and the
-"defun" targeter to only work in Emacs Lisp code.
+Some of the targeting functions are a bit too general in what they accept. We'll adjust the expression and identifier targeters to only work in ~prog-mode~ and the "defun" targeter to only work in Emacs Lisp code.
 
 #+begin_src emacs-lisp
 (defun ~/embark-target-prog-mode (old-fn)
@@ -1484,8 +1411,7 @@ adjust the expression and identifier targeters to only work in ~prog-mode~ and t
   (embark-define-thingatpt-target defun emacs-lisp-mode))
 #+end_src
 
-We'll also define a word targeter, since that case was previously handled by the
-identifier one.
+We'll also define a word targeter, since that case was previously handled by the identifier one.
 
 #+begin_src emacs-lisp
 (defun embark-target-word-at-point ()
@@ -1501,8 +1427,7 @@ identifier one.
 
 *** LSP Integration
 
-The provided action types related to programming only apply to Emacs Lisp code,
-so we'll add a new one that integrates with LSP.
+The provided action types related to programming only apply to Emacs Lisp code, so we'll add a new one that integrates with LSP.
 
 #+begin_src emacs-lisp
 (defun embark-target-lsp-symbol-at-point ()
@@ -1523,9 +1448,7 @@ so we'll add a new one that integrates with LSP.
 
 *** Hooks
 
-The hook ~embark--mark-target~ normally sets the mark to the end and puts the
-point at the beginning. This is the opposite of the usual order, so let's
-override it to flip the order.
+The hook ~embark--mark-target~ normally sets the mark to the end and puts the point at the beginning. This is the opposite of the usual order, so let's override it to flip the order.
 
 #+begin_src emacs-lisp
 (after! embark
@@ -1545,8 +1468,6 @@ After marking the target, call RUN with the REST of its arguments."
 #+end_src
 
 *** Actions
-
-This
 
 We'll be using a lot of new actions, so let's set their hooks.
 
@@ -1900,8 +1821,7 @@ While we're here, we'll also set my preferred =evil-escape= keys:
 
 #+call: confpkg("!Pkg flymake")
 
-I really like Flycheck's double-arrow fringe indicator, so let's quickly steal
-that:
+I really like Flycheck's double-arrow fringe indicator, so let's quickly steal that:
 
 #+begin_src emacs-lisp
 (after! flymake
@@ -1918,8 +1838,7 @@ that:
         (car flymake-note-bitmap) 'flymake-double-left-arrow))
 #+end_src
 
-Flymake normally uses italics for warnings, but my italics font being cursive
-makes that a bit too visually noisy.
+Flymake normally uses italics for warnings, but my italics font being cursive makes that a bit too visually noisy.
 
 #+begin_src emacs-lisp
 (custom-set-faces!
@@ -2013,8 +1932,7 @@ Here's a convenient leader key binding as well:
 
 #+call: confpkg("!Pkg treemacs")
 
-Treemacs is a really useful package, but it also has a lot of defaults I don't
-like. Let's add a ~use-package!~ declaration to fix some of them:
+Treemacs is a really useful package, but it also has a lot of defaults I don't like. Let's add a ~use-package!~ declaration to fix some of them:
 
 #+begin_src emacs-lisp
 (use-package! treemacs
@@ -2058,9 +1976,7 @@ like. Let's add a ~use-package!~ declaration to fix some of them:
 
 *** Project Integration
 
-I often accidentally open the project tree before I've even selected a project,
-which I don't want because it messes up =treemacs-projectile=. Let's fix that
-problem:
+I often accidentally open the project tree before I've even selected a project, which I don't want because it messes up =treemacs-projectile=. Let's fix that problem:
 
 #+begin_src emacs-lisp
 (defun ~/treemacs-restrict (&rest _)
@@ -2071,11 +1987,7 @@ problem:
 (advice-add #'+treemacs/toggle :before #'~/treemacs-restrict)
 #+end_src
 
-When I do have a project open, Treemacs is flexible and allows you to open
-directories other than that project. This /would/ be great and convenient if it
-weren't for the fact that it doesn't do so very well, often opening the wrong
-directories entirely. This convenience function ensures that only the project
-directory is open.
+When I do have a project open, Treemacs is flexible and allows you to open directories other than that project. This /would/ be great and convenient if it weren't for the fact that it doesn't do so very well, often opening the wrong directories entirely. This convenience function ensures that only the project directory is open.
 
 #+begin_src emacs-lisp
 (defun ~/treemacs-fix-project ()
@@ -2110,9 +2022,7 @@ Set ~vterm~ to use =fish= as its shell:
 
 ** Operation Hints
 
-I like having hints that show how large the editing operation I just performed
-was, but the =ophints= module in Doom doesn't look very good to me (it gets rid of
-pulses and color), so I'll override it.
+I like having hints that show how large the editing operation I just performed was, but the =ophints= module in Doom doesn't look very good to me (it gets rid of pulses and color), so I'll override it.
 
 #+begin_src emacs-lisp :tangle modules/ui/ophints/packages.el
 ;; -*- no-byte-compile: t; -*-
@@ -2176,8 +2086,7 @@ Allow nested snippets:
 
 #+call: confpkg("Calc")
 
-Emacs Calc is the best calculator I've ever used, and given the fact that it's
-an RPN calculator, that's saying something.
+Emacs Calc is the best calculator I've ever used, and given the fact that it's an RPN calculator, that's saying something.
 
 *** Leader Key Bindings
 
@@ -2229,8 +2138,7 @@ Typing =C-x *= every time I want to use Calc (very often) is annoying.
        "`" #'calc-embedded-edit))
 #+end_src
 
-For the grab-region command, I think it makes sense to have it check whether
-your selection is a rectangle (=C-v=):
+For the grab-region command, I think it makes sense to have it check whether your selection is a rectangle (=C-v=):
 
 #+begin_src emacs-lisp
 (defun ~/calc-grab-region (top bot &optional arg)
@@ -2244,9 +2152,7 @@ what type of visual state is currently active."
 
 *** Evil Bindings
 
-I want to have vim keybindings in Calc, so let's enable the =evil-collection=
-module for it. I haven't found a better way to do this than to edit the relevant
-variable in ~init.el~:
+I want to have vim keybindings in Calc, so let's enable the =evil-collection= module for it. I haven't found a better way to do this than to edit the relevant variable in ~init.el~:
 
 #+begin_src emacs-lisp :tangle init.el :noweb-ref none
 ;; Enable evil-collection-calc
@@ -2273,8 +2179,7 @@ variable in ~init.el~:
         lispy))
 #+end_src
 
-Let's also rebind some keys. Preserving evil's =[= and =]= bindings doesn't make
-sense to me, and =C-r= makes more sense as a redo binding than =D D=.
+Let's also rebind some keys. Preserving evil's =[= and =]= bindings doesn't make sense to me, and =C-r= makes more sense as a redo binding than =D D=.
 
 #+begin_src emacs-lisp
 (defadvice! ~/evil-collection-calc-bindings ()
@@ -2287,8 +2192,7 @@ sense to me, and =C-r= makes more sense as a redo binding than =D D=.
 
 *** Appearance
 
-Calc doesn't use faces to show selections by default, which I think is rather
-strange.
+Calc doesn't use faces to show selections by default, which I think is rather strange.
 
 #+begin_src emacs-lisp
 (after! calc
@@ -2378,10 +2282,7 @@ I use the standard Unix-style password management system, [[https://www.password
 
 #+call: confpkg("Emacs Everywhere")
 
-Emacs Everywhere is a great idea. Unfortunately, the default package on MELPA
-uses X-based window commands, while I use Hyprland, which is Wayland-based. To
-fix this issue, we need to override some of the package's variables and
-functions.
+Emacs Everywhere is a great idea. Unfortunately, the default package on MELPA uses X-based window commands, while I use Hyprland, which is Wayland-based. To fix this issue, we need to override some of the package's variables and functions.
 
 #+begin_src emacs-lisp
 (after! emacs-everywhere
@@ -2415,14 +2316,9 @@ functions.
 
 #+call: confpkg()
 
-I love ~org-mode~. In fact, I love it so much that I'm willing to give it its own
-top-level section in this config! Its power and flexibility are unmatched by any
-other productivity/organization tool I've ever used. Much like Emacs itself, all
-alternatives simply vanish.
+I love ~org-mode~. In fact, I love it so much that I'm willing to give it its own top-level section in this config! Its power and flexibility are unmatched by any other productivity/organization tool I've ever used. Much like Emacs itself, all alternatives simply vanish.
 
-Unfortunately, with that power comes a *lot* of configuration work up-front. It
-was completely worth it for me when I made it out the other end, but that
-doesn't mean everyone would have the time or patience to make it work.
+Unfortunately, with that power comes a *lot* of configuration work up-front. It was completely worth it for me when I made it out the other end, but that doesn't mean everyone would have the time or patience to make it work.
 
 ** Basic Configuration
 
@@ -2468,8 +2364,7 @@ doesn't mean everyone would have the time or patience to make it work.
 
 **** Convenience
 
-There are a few useful functions Doom doesn't bind by default, so let's add them
-for convenience.
+There are a few useful functions Doom doesn't bind by default, so let's add them for convenience.
 
 #+begin_src emacs-lisp
 (map! :after org
@@ -2489,16 +2384,9 @@ for convenience.
 
 **** YASnippet
 
-By default, snippet expansion doesn't work in Org mode; when =TAB= is pressed to
-move to the next placeholder, headline visibility cycling is triggered instead.
-This is because in ~org-mode-map~ =TAB= is unconditionally bound to ~org-cycle~, and
-for some reason this has a higher precedence than YAS's keymaps.
+By default, snippet expansion doesn't work in Org mode; when =TAB= is pressed to move to the next placeholder, headline visibility cycling is triggered instead. This is because in ~org-mode-map~ =TAB= is unconditionally bound to ~org-cycle~, and for some reason this has a higher precedence than YAS's keymaps.
 
-While this is a complex problem, the solution is actually rather simple: just
-remove the ~org-mode-map~ binding. The ~org-cycle~ command will still be triggered
-on =TAB= when in normal mode, as it is bound in ~evil-org-mode-map~, but when in
-insert mode (as one generally is during snippet expansion) the binding will fall
-through both maps and be handled by YASnippet.
+While this is a complex problem, the solution is actually rather simple: just remove the ~org-mode-map~ binding. The ~org-cycle~ command will still be triggered on =TAB= when in normal mode, as it is bound in ~evil-org-mode-map~, but when in insert mode (as one generally is during snippet expansion) the binding will fall through both maps and be handled by YASnippet.
 
 #+begin_src emacs-lisp
 (map! :after org
@@ -2511,9 +2399,7 @@ This also means we don't need ~org-cycle~ to emulate indentation, which is nice.
 
 *** Appearance
 
-When marking text for =*emphasis*=, Org mode normally only allows emphasized
-sections to span 2 lines. This strikes me as needlessly limited, so let's bump
-up that number to 20 lines.
+When marking text for =*emphasis*=, Org mode normally only allows emphasized sections to span 2 lines. This strikes me as needlessly limited, so let's bump up that number to 20 lines.
 
 #+begin_src emacs-lisp
 (after! org
@@ -2522,8 +2408,7 @@ up that number to 20 lines.
 
 *** Project Links
 
-It's sometimes nice to be able to click a link in an Org file that takes me to
-one of my projects.
+It's sometimes nice to be able to click a link in an Org file that takes me to one of my projects.
 
 #+begin_src emacs-lisp
 (defun org-projectile-follow (path _)
@@ -2544,9 +2429,7 @@ one of my projects.
 
 *** Export Directory
 
-Org mode by default exports to the same directory the org-mode file is in. This
-is inconvenient for me, as I use a lot of subdirectories. To fix this, we can
-advise the function ~org-export-output-file-name~.
+Org mode by default exports to the same directory the org-mode file is in. This is inconvenient for me, as I use a lot of subdirectories. To fix this, we can advise the function ~org-export-output-file-name~.
 
 #+begin_src emacs-lisp
 (defvar org-export-dir (expand-file-name "export/" org-directory)
@@ -2565,11 +2448,7 @@ If nil, then `default-directory' for the org buffer is used.")
 
 *** Todo Date Overriding
 
-My attention span being what it is, I often forget to update TODO entries in my
-Org files until long after the task has been completed. I rely heavily on
-tracking TODOs through timestamps, so it would be nice to have a command to
-override the date. To do this, we can create a new variable ~org-todo-time~ that
-will specify the time to update TODOs with.
+My attention span being what it is, I often forget to update TODO entries in my Org files until long after the task has been completed. I rely heavily on tracking TODOs through timestamps, so it would be nice to have a command to override the date. To do this, we can create a new variable ~org-todo-time~ that will specify the time to update TODOs with.
 
 #+begin_src emacs-lisp
 (defvar org-todo-time nil
@@ -2583,8 +2462,7 @@ If nil, then use the current time.")
   (or org-todo-time (funcall old-fn)))
 #+end_src
 
-We can then define and bind alternate versions of ~org-todo~ and ~org-agenda-todo~
-that allow us to pick the time to set.
+We can then define and bind alternate versions of ~org-todo~ and ~org-agenda-todo~ that allow us to pick the time to set.
 
 #+begin_src emacs-lisp
 (defmacro ~/org-wrap-todo (fn)
@@ -2612,9 +2490,7 @@ that allow us to pick the time to set.
 
 ** Tags
 
-Org mode offers a useful tag hierarchy system, configured via ~org-tag-alist~.
-We'll be using ~org-tag-persistent-alist~ instead so that our tag hierarchy can't
-be overwritten.
+Org mode offers a useful tag hierarchy system, configured via ~org-tag-alist~. We'll be using ~org-tag-persistent-alist~ instead so that our tag hierarchy can't be overwritten.
 
 #+begin_src emacs-lisp
 (defvar classes-mwf '()
@@ -2659,32 +2535,21 @@ be overwritten.
 
 #+call: confpkg()
 
-When I started out using Org mode, I just used vanilla Org files to manage my
-notes. This worked, but as my notes grew more and more I've begun to
-increasingly rely on [[https://www.orgroam.com/][Org-roam]] to more systematically manage my organization.
+When I started out using Org mode, I just used vanilla Org files to manage my notes. This worked, but as my notes grew more and more I've begun to increasingly rely on [[https://www.orgroam.com/][Org-roam]] to more systematically manage my organization.
 
 *** Concept
 
-Org-roam is inspired by Roam Research, and like that tool it is based on the
-Zettelkasten (slip-box) note-taking method. In the Zettelkasten method, notes
-and concepts are separated into small chunks (called "nodes" in Org-roam
-terminology). These notes can live freely in any file on your system, and are
-linked to each other through ID links, leading to a freer note system that isn't
-tied to any particular organizational structure or hierarchy.
+Org-roam is inspired by Roam Research, and like that tool it is based on the Zettelkasten (slip-box) note-taking method. In the Zettelkasten method, notes and concepts are separated into small chunks (called "nodes" in Org-roam terminology). These notes can live freely in any file on your system, and are linked to each other through ID links, leading to a freer note system that isn't tied to any particular organizational structure or hierarchy.
 
 *** Task Management
 
-In my use of Org-roam for task management, I divide nodes into a few different
-categories:
+In my use of Org-roam for task management, I divide nodes into a few different categories:
 
 1. *Areas*, which represent continual areas of your life to organize and plan;
 2. *Goals*, short- or long-term, things that can be completed;
 3. *Tasks*, which are one-time and contribute to goals or areas.
 
-Areas are stored as subnodes of the =Areas= file node, and likewise for goals.
-They also have the =:area:= and =:goal:= tags respectively. A task is a node that is
-a TODO entry that links to an area or a goal. We can thus check for if a node is
-a task by checking if the node links to a =:area:= or =:goal:= tagged node.
+Areas are stored as subnodes of the =Areas= file node, and likewise for goals. They also have the =:area:= and =:goal:= tags respectively. A task is a node that is a TODO entry that links to an area or a goal. We can thus check for if a node is a task by checking if the node links to a =:area:= or =:goal:= tagged node.
 
 #+begin_src emacs-lisp
 (defun ~/org-roam-get-linked-nodes (node tag)
@@ -2703,9 +2568,7 @@ a task by checking if the node links to a =:area:= or =:goal:= tagged node.
 
 *** Roam Buffer
 
-The unlinked references section is turned off by default for performance
-reasons, but I've never had any serious issues with it. Let's turn that on, and
-also make sure backlinks are unique.
+The unlinked references section is turned off by default for performance reasons, but I've never had any serious issues with it. Let's turn that on, and also make sure backlinks are unique.
 
 #+begin_src emacs-lisp
 (after! org-roam
@@ -2717,8 +2580,7 @@ also make sure backlinks are unique.
 
 *** Roam Capture
 
-Creating new nodes should be quick and easy, so we should stick to one template
-to avoid the hassle of choosing.
+Creating new nodes should be quick and easy, so we should stick to one template to avoid the hassle of choosing.
 
 #+begin_src emacs-lisp
 (defun org-roam-node-file-maybe (node &optional dir)
@@ -2767,8 +2629,7 @@ Making links to Roam nodes is a bit finicky. This helps fix some of that.
 
 ** Capture Templates
 
-I don't use these very often currently, and am reconsidering whether I should
-rework them entirely. These might change soon!
+I don't use these very often currently, and am reconsidering whether I should rework them entirely. These might change soon!
 
 #+begin_src emacs-lisp
 (defun ~/org-project-find-heading ()
@@ -2825,8 +2686,7 @@ rework them entirely. These might change soon!
 
 *** Configuration
 
-A full week-long agenda is usually too cluttered for me to read, so I'll narrow
-it down to a single day. I also like the week to start on Monday.
+A full week-long agenda is usually too cluttered for me to read, so I'll narrow it down to a single day. I also like the week to start on Monday.
 
 #+begin_src emacs-lisp
 (after! org
@@ -2843,9 +2703,7 @@ it down to a single day. I also like the week to start on Monday.
 
 *** Agenda View
 
-The Org agenda is a very nice feature, but by default it doesn't really provide
-enough customization to fit my needs. I like to have nice categories to make
-parsing my todos easier, so we'll use ~org-super-agenda~:
+The Org agenda is a very nice feature, but by default it doesn't really provide enough customization to fit my needs. I like to have nice categories to make parsing my todos easier, so we'll use ~org-super-agenda~:
 
 #+begin_src emacs-lisp :tangle packages.el :noweb-ref none
 (package! org-super-agenda)
@@ -2864,8 +2722,7 @@ parsing my todos easier, so we'll use ~org-super-agenda~:
   (setq org-super-agenda-header-map nil))
 #+end_src
 
-The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I
-want to open my agenda, it's to see my "preferred" view.
+The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I want to open my agenda, it's to see my "preferred" view.
 
 #+begin_src emacs-lisp
 (defun ~/org-agenda-section-by-link (prefix tag item)
@@ -2925,11 +2782,7 @@ want to open my agenda, it's to see my "preferred" view.
 
 *** Agenda Files
 
-I have a lot of different subdirectories and groupings in my org directory, but
-unfortunately directories listed in ~org-agenda-files~ aren't checked recursively!
-I haven't yet found out how to solve this problem directly, so instead I'm going
-to mitigate it somewhat by recursively adding every subdirectory of my org
-directory to ~org-agenda-files~.
+I have a lot of different subdirectories and groupings in my org directory, but unfortunately directories listed in ~org-agenda-files~ aren't checked recursively! I haven't yet found out how to solve this problem directly, so instead I'm going to mitigate it somewhat by recursively adding every subdirectory of my org directory to ~org-agenda-files~.
 
 #+begin_src emacs-lisp
 (defun directory-dirs (dirs)
@@ -2968,12 +2821,9 @@ directory to ~org-agenda-files~.
 
 #+call: confpkg("Org Cite")
 
-Org mode has a very robust system for specifying citations, one which is taken
-advantage of by the package =citar=.
+Org mode has a very robust system for specifying citations, one which is taken advantage of by the package =citar=.
 
-Let's start with some configuration. I use [[https://www.zotero.org/][Zotero]] to manage my citations, and
-when I want to use them in Org mode I export them to a file =library.json= (CSL
-JSON) in my org directory.
+Let's start with some configuration. I use [[https://www.zotero.org/][Zotero]] to manage my citations, and when I want to use them in Org mode I export them to a file =library.json= (CSL JSON) in my org directory.
 
 #+begin_src emacs-lisp
 (after! org
@@ -3026,8 +2876,7 @@ And we should also make it look a little prettier:
 
 #+call: confpkg("Org Journal")
 
-I don't use ~org-journal~ anymore, but I'm keeping my old configuration for it in
-case I want to go back.
+I don't use ~org-journal~ anymore, but I'm keeping my old configuration for it in case I want to go back.
 
 #+begin_src emacs-lisp
 (after! org-journal
@@ -3036,8 +2885,7 @@ case I want to go back.
         org-journal-hide-entries-p nil))
 #+end_src
 
-To make opening the journal more convenient, here's a command to open the latest
-entry:
+To make opening the journal more convenient, here's a command to open the latest entry:
 
 #+begin_src emacs-lisp
 (defun +org/org-journal-open-latest ()
@@ -3054,17 +2902,13 @@ entry:
 
 * Languages and Modes
 
-Despite Emacs being my editor of choice for programming, I don't actually have a
-lot of configuration for programming languages. I suppose that this is because
-language packages tend to not need much configuration, as the bounds of what a
-language mode needs to do are typically defined by the language itself.
+Despite Emacs being my editor of choice for programming, I don't actually have a lot of configuration for programming languages. I suppose that this is because language packages tend to not need much configuration, as the bounds of what a language mode needs to do are typically defined by the language itself.
 
 ** Dired
 
 #+call: confpkg("!Mode dired")
 
-Dired by default spawns a new buffer for every directory, which clutters up your
-buffer list very quickly.
+Dired by default spawns a new buffer for every directory, which clutters up your buffer list very quickly.
 
 #+begin_src emacs-lisp
 (after! dired
@@ -3097,9 +2941,7 @@ Operators being in italics looks ugly, so let's fix that.
 :header-args:emacs-lisp: :noweb-ref idris-config
 :END:
 
-Idris's support for Emacs is still experimental and has a few kinks to work out,
-especially since I'm using Idris 2, which the recommended =idris-mode= needs to be
-configured to use.
+Idris's support for Emacs is still experimental and has a few kinks to work out, especially since I'm using Idris 2, which the recommended =idris-mode= needs to be configured to use.
 
 The Doom module is very outdated, so I'll be overriding it.
 
@@ -3162,10 +3004,7 @@ The Doom module is very outdated, so I'll be overriding it.
 
 *** Appearance
 
-Operators being in italics looks ugly in this mode too, but unfortunately due to
-Idris's more complicated syntax highlighting system we have to do a bit more
-work than for Haskell. There's also the issue of the semantic highlighting
-faces, which don't match our theme colors.
+Operators being in italics looks ugly in this mode too, but unfortunately due to Idris's more complicated syntax highlighting system we have to do a bit more work than for Haskell. There's also the issue of the semantic highlighting faces, which don't match our theme colors.
 
 #+begin_src emacs-lisp
 (after! idris-mode
