@@ -771,8 +771,7 @@ We'll also enable a dedicated spell checking module using ~aspell~, as that seem
 Most of these are either defaults that come with Doom Emacs or just recommended, but here are the highlights:
 
 - ~vi-tilde-fringe~ because I like how it looks
-- ~(window-select +numbers)~ because multiple windows are too inconvenient without
-  an easy way to switch between them
+- ~(window-select +numbers)~ because multiple windows are too inconvenient without an easy way to switch between them
 - ~file-templates~ and ~snippets~ because typing is hard
 - ~(format +onsave)~ because I don't want to have to remember to run a formatter
 - ~direnv~ because I'm a nix user
@@ -1191,16 +1190,26 @@ I'm not even going to bother explaining this one. Emacs is just janky sometimes 
 I have rather specific tastes when it comes to line wrapping. I like soft line wrapping (~visual-line-mode~), but I want it to be as seamless as possible.
 
 #+begin_src emacs-lisp
-(setq +word-wrap-fill-style 'soft) ; Soft line wrapping
+(setq +word-wrap-fill-style 'soft      ; Soft line wrapping
+      evil-respect-visual-line-mode t  ; Respect visual line mode
+      )
 (setq-default fill-column 90)      ; More space before wrap
 #+end_src
 
-Evil Emacs is normally quite unwieldy to use with soft line wrapping, so let's fix that:
+For some reason, telling Evil to respect soft line wrapping doesn't change the behavior of =j= and =k=, so I'll do that myself.
 
 #+begin_src emacs-lisp
-(use-package! evil
-  :init
-  (setq evil-respect-visual-line-mode t))
+(after! evil
+  (evil-define-motion evil-next-line (count)
+    "Move the cursor COUNT lines down."
+    :type line
+    (let ((line-move-visual evil-respect-visual-line-mode))
+      (evil-line-move (or count 1))))
+  (evil-define-motion evil-previous-line (count)
+    "Move the cursor COUNT lines up."
+    :type line
+    (let ((line-move-visual evil-respect-visual-line-mode))
+      (evil-line-move (- (or count 1))))))
 #+end_src
 
 When a buffer has line numbers, they can interfere with the margins and make them smaller than they need to be.
