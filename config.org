@@ -1073,6 +1073,7 @@ I don't want my cache files to get deleted whenever I mess up my Doom install,
 so let's move them to somewhere more safe.
 
 #+begin_src emacs-lisp
+(require 'auth-source-pass)
 (setq auth-sources '(password-store "~/.authinfo.gpg")
       auth-source-cache-expiry nil)
 #+end_src
