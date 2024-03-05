@@ -2506,6 +2506,17 @@ through both maps and be handled by YASnippet.
 
 This also means we don't need ~org-cycle~ to emulate indentation, which is nice.
 
+*** Appearance
+
+When marking text for =*emphasis*=, Org mode normally only allows emphasized
+sections to span 2 lines. This strikes me as needlessly limited, so let's bump
+up that number to 20 lines.
+
+#+begin_src emacs-lisp
+(after! org
+  (setf (nth 4 org-emphasis-regexp-components) 20))
+#+end_src
+
 *** Project Links
 
 It's sometimes nice to be able to click a link in an Org file that takes me to
@@ -2526,6 +2537,8 @@ one of my projects.
                            :complete #'org-projectile-completion))
 #+end_src
 
+** Enhancements
+
 *** Export Directory
 
 Org mode by default exports to the same directory the org-mode file is in. This
@@ -2545,6 +2558,53 @@ If nil, then `default-directory' for the org buffer is used.")
   (unless (file-directory-p pub-dir)
     (make-directory pub-dir t))
   (funcall orig-fn extension subtreep pub-dir))
+#+end_src
+
+*** Todo Date Overriding
+
+My attention span being what it is, I often forget to update TODO entries in my
+Org files until long after the task has been completed. I rely heavily on
+tracking TODOs through timestamps, so it would be nice to have a command to
+override the date. To do this, we can create a new variable ~org-todo-time~ that
+will specify the time to update TODOs with.
+
+#+begin_src emacs-lisp
+(defvar org-todo-time nil
+  "The time to use when updating TODO entries.
+
+If nil, then use the current time.")
+
+(defadvice! ~/org-override-time (old-fn)
+  "Use `org-todo-time' as the current time if it is specified."
+  :around #'org-current-effective-time
+  (or org-todo-time (funcall old-fn)))
+#+end_src
+
+We can then define and bind alternate versions of ~org-todo~ and ~org-agenda-todo~
+that allow us to pick the time to set.
+
+#+begin_src emacs-lisp
+(defmacro ~/org-wrap-todo (fn)
+  "Wrap a command to set `org-todo-time'."
+  (let ((new-fn (intern (format "%s-date" fn))))
+    `(defun ,new-fn (&optional arg)
+       ,(format "Call `%s', but allow the user to pick a time first." fn)
+       (interactive "P")
+       (let ((org-todo-time (org-read-date t t)))
+         (,fn arg)))))
+
+(after! org
+  (~/org-wrap-todo org-todo)
+  (~/org-wrap-todo org-agenda-todo))
+
+(map! :mode org-mode
+      :after org
+      :localleader
+      "T" #'org-todo-date)
+
+(map! :mode org-agenda-mode
+      :after org
+      "T" #'org-agenda-todo-date)
 #+end_src
 
 ** Tags
