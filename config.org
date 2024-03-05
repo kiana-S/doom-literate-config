@@ -2371,6 +2371,43 @@ I use the standard Unix-style password management system, [[https://www.password
   (set-popup-rule! "^\\*Password-Store" :side 'right :size 0.25 :quit nil))
 #+end_src
 
+** Emacs Everywhere
+
+#+call: confpkg("Emacs Everywhere")
+
+Emacs Everywhere is a great idea. Unfortunately, the default package on MELPA
+uses X-based window commands, while I use Hyprland, which is Wayland-based. To
+fix this issue, we need to override some of the package's variables and
+functions.
+
+#+begin_src emacs-lisp
+(after! emacs-everywhere
+  ;; Shell commands for interacting with window system
+  (setq emacs-everywhere-paste-command
+        '("wtype" "-M" "ctrl" "v" "-m" "ctrl")
+        emacs-everywhere-copy-command
+        '("sh" "-c" "wl-copy < %f")
+        emacs-everywhere-window-focus-command
+        '("hyprctl" "dispatch" "focuswindow" "address:%w")))
+
+;; Function for accessing current window
+(defadvice! ~/emacs-everywhere-app-info-hyprland ()
+  "Return information on the active window, in Hyprland."
+  :override #'emacs-everywhere--app-info-linux
+  (pcase-let*
+      ((`(,window-id ,window-class ,window-title . ,window-dims-)
+        (split-string (shell-command-to-string
+                       "hyprctl activewindow -j | jaq -r \
+'.address, .class, .title, .at[], .size[]'")
+                      "\n"))
+       (window-dims (mapcar #'string-to-number (butlast window-dims-))))
+    (make-emacs-everywhere-app
+     :id window-id
+     :class window-class
+     :title window-title
+     :geometry window-dims)))
+#+end_src
+
 * Org
 
 #+call: confpkg()
