@@ -2769,31 +2769,25 @@ The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I 
            ((agenda "")
             (alltodo ""
                      ((org-super-agenda-groups
-                       '((:discard (:todo "PROJ"))
+                       '((:name "Next/In Progress"
+                          :todo ("NEXT" "STRT" "WAIT" "HOLD"))
                          (:name "Important"
-                          :priority "A")
+                          :priority "A"
+                          :order 1)
                          (:name "Assignments"
                           :tag "assign"
-                          :order 1)
-                         (:auto-map (lambda (item)
-                                      (~/org-agenda-section-by-link "Goal: " "goal" item))
                           :order 2)
                          (:auto-map (lambda (item)
-                                      (~/org-agenda-section-by-link "Area: " "area" item))
+                                      (~/org-agenda-section-by-link
+                                       "Goal: " "goal" item))
                           :order 3)
+                         (:auto-map (lambda (item)
+                                      (~/org-agenda-section-by-link
+                                       "Area: " "area" item))
+                          :order 4)
                          (:name "Notes to Intake"
                           :tag "notes"
-                          :order 4)
-                         (:name "Projects"
-                          :and (:tag "project"
-                                :todo ("WORK" "HOLD"))
-                          :order 5))))))))
-
-        ;; In case I ever use this
-        org-stuck-projects
-        '("project/!-TODO-STRT-WAIT-DONE"
-          ("PROJ" "NEXT" "FIN" "KILL")
-          nil "")))
+                          :order 10))))))))))
 
 (defun ~/org-agenda (&optional arg)
   "Wrapper around preferred agenda view."
