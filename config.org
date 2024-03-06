@@ -1237,15 +1237,23 @@ We first need a function to build a flake reference:
 
 #+begin_src emacs-lisp
 (defun nix-build-out-path (out &optional impure)
-  "Build the given flake output OUT and return the output path.
+  "Build the given flake output OUT and return the output path. Return
+nil if the build fails.
 
 If IMPURE is t, then allow impure builds."
   (message "Building \"%s\" ..." out)
-  (require 's)
-  (s-trim (shell-command-to-string
-           (concat "nix build --no-link --print-out-paths "
-                   (when impure "--impure ") out))))
-#+end_src
+  (require 'nix) (require 's)
+  (let* ((args `("build" "--no-link" "--print-out-paths"
+                 ,@(if impure "--impure") ,out))
+         (buffer (generate-new-buffer " *nix-process*" t))
+         (status (apply #'call-process nix-executable nil
+                        (list buffer nil) nil args)))
+    (prog1
+        (when (eql status 0)
+          (with-current-buffer buffer
+            (s-trim (buffer-string))))
+      (kill-buffer buffer))))
+    #+end_src
 
 This works well enough if we just want to build something, but there's a problem: we haven't indicated to Nix that we want this output to stick around, so it will be deleted the next time we garbage collect. To fix this, we can write a wrapper function that also makes the output path a garbage collection root.
 
@@ -1253,17 +1261,17 @@ This works well enough if we just want to build something, but there's a problem
 (defun nix-build-out-path-gcroot (name out &optional impure)
   "Build the given flake output OUT, register its output path as
 a garbage collection root under NAME, and return the output path.
+Return nil if the build fails.
 
 The GC root is placed under \"/nix/var/nix/gcroots/emacs/NAME\". If
 a call to this function reuses the same NAME argument, then the
 symlink is overwritten.
 
 If IMPURE is t, then allow impure builds."
-  (let* ((gcdir "/nix/var/nix/gcroots/emacs")
-         (sym (expand-file-name name gcdir))
-         (path (nix-build-out-path out impure)))
+  (when-let* ((path (nix-build-out-path out impure))
+              (gcdir "/nix/var/nix/gcroots/emacs")
+              (sym (expand-file-name name gcdir)))
     (unless (equal path (file-symlink-p sym))
-      (require 'epg)
       (make-directory (concat "/sudo::" gcdir) t)
       (make-symbolic-link path (concat "/sudo::" sym) t))
     path))
@@ -1950,8 +1958,10 @@ Treemacs is a really useful package, but it also has a lot of defaults I don't l
   ; More accurate git status
   (setq +treemacs-git-mode 'deferred
         treemacs-python-executable
-        (concat (nix-build-out-path-gcroot "treemacs-python" "nixpkgs#python3")
-                "/bin/python"))
+        (if-let ((path (nix-build-out-path-gcroot
+                        "treemacs-python" "nixpkgs#python3")))
+            (concat path "/bin/python")
+          (error "Building python for treemacs failed")))
   :config
   (setq ; Child-frame reading is broken (and sucks anyways)
         treemacs-read-string-input 'from-minibuffer
