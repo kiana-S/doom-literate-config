@@ -2342,7 +2342,6 @@ Unfortunately, with that power comes a *lot* of configuration work up-front. It 
 ** Basic Configuration
 
 #+begin_src emacs-lisp
-
 (setq org-directory "~/org/")
 
 (after! org
@@ -2356,27 +2355,32 @@ Unfortunately, with that power comes a *lot* of configuration work up-front. It 
         org-startup-with-latex-preview t
         +org-startup-with-animated-gifs t
         org-format-latex-options           ; Make latex preview smaller
-          (plist-put org-format-latex-options :scale 0.55)
+        (plist-put org-format-latex-options :scale 0.55)
 
         ;; Todo Keywords
         org-todo-keywords
-        '((sequence "TODO(t)" "STRT(s)" "WAIT(w)" "|" "DONE(d)")
-          (sequence "PROJ(p)" "NEXT(n)" "WORK(o!)" "HOLD(h@/!)" "|" "FIN(f!/@)")
-          (sequence "|" "KILL(k@)"))
+        '((sequence
+           "TODO(t)" "PROJ(p)"
+           "NEXT(n)"
+           "STRT(s!)"
+           "WAIT(w@/!)" "HOLD(h@/!)"
+           "|"
+           "DONE(d!/@)" "PART(r@/@)"
+           "KILL(k@/@)"))
         org-todo-keyword-faces
-        '(("STRT" . +org-todo-active)
+        '(("PROJ" . +org-todo-project)
+          ("STRT" . +org-todo-active)
           ("WAIT" . +org-todo-onhold)
-          ("KILL" . +org-todo-cancel)
-          ("PROJ" . +org-todo-project)
-          ("WORK" . +org-todo-active)
-          ("HOLD" . +org-todo-onhold))
+          ("HOLD" . +org-todo-onhold)
+          ("KILL" . +org-todo-cancel))
 
         ;; Customize appearance
         org-hide-emphasis-markers t
         org-hide-leading-stars nil
-        org-superstar-item-bullet-alist '((42 . 8226)
-                                          (43 . 8226)
-                                          (45 . 8226))))
+        org-superstar-item-bullet-alist
+        '((?* . 8226)
+          (?+ . 8226)
+          (?- . 8226))))
 #+end_src
 
 *** Bindings
