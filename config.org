@@ -2501,10 +2501,14 @@ We can then define and bind alternate versions of ~org-todo~ and ~org-agenda-tod
       :after org
       :localleader
       "T" #'org-todo-date)
-
 (map! :mode org-agenda-mode
       :after org
+      "T" #'org-agenda-todo-date
+      :localleader
       "T" #'org-agenda-todo-date)
+(map! :mode evil-org-agenda-mode
+      :after org
+      :m "T" #'org-agenda-todo-date)
 #+end_src
 
 ** Tags
