@@ -2936,16 +2936,6 @@ Dired by default spawns a new buffer for every directory, which clutters up your
   (setq dired-kill-when-opening-new-dired-buffer t))
 #+end_src
 
-** Prose
-
-#+call: confpkg("!Mode text")
-
-I like having ~auto-fill-mode~ on while writing text:
-
-#+begin_src emacs-lisp
-(add-hook! text-mode #'auto-fill-mode)
-#+end_src
-
 ** Haskell
 
 #+call: confpkg("!Mode haskell")
