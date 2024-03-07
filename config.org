@@ -1378,30 +1378,6 @@ We'll switch the default docstring handler to ~eldoc-documentation-compose~, sin
   (setq eldoc-documentation-strategy 'eldoc-documentation-compose))
 #+end_src
 
-** Marginalia
-
-#+call: confpkg("!Pkg marginalia")
-
-Marginalia mostly works fine on its own, but we should add a few more Doom-specific prompt categories to its registry.
-
-#+begin_src emacs-lisp
-(after! marginalia
-  ;; Workspace and project categories
-  (pushnew! marginalia-prompt-categories
-            '("\\<workspace\\>" . workspace)
-            '("\\<projects?\\>" . known-project))
-
-  ;; Annotate equivalently to files
-  (pushnew! marginalia-annotator-registry
-            '(known-project marginalia-annotate-file builtin none))
-
-  ;; Remove special case for projectile-switch-project
-  ;; (now covered by known-project category)
-  (setf (alist-get #'projectile-switch-project marginalia-command-categories nil t) nil))
-#+end_src
-
-These new categories can then be used to define [[*Keymaps][Embark keymaps]] for minibuffer completion.
-
 ** Embark
 
 #+call: confpkg("!Pkg embark")
@@ -1945,6 +1921,140 @@ Here's a convenient leader key binding as well:
   :hook (magit-mode . magit-delta-mode))
 #+end_src
 
+** Marginalia
+
+#+call: confpkg("!Pkg marginalia")
+
+Marginalia mostly works fine on its own, but we should add a few more Doom-specific prompt categories to its registry.
+
+#+begin_src emacs-lisp
+(after! marginalia
+  ;; Workspace and project categories
+  (pushnew! marginalia-prompt-categories
+            '("\\<workspace\\>" . workspace)
+            '("\\<projects?\\>" . known-project))
+
+  ;; Annotate equivalently to files
+  (pushnew! marginalia-annotator-registry
+            '(known-project marginalia-annotate-file builtin none))
+
+  ;; Remove special case for projectile-switch-project
+  ;; (now covered by known-project category)
+  (setf (alist-get #'projectile-switch-project marginalia-command-categories nil t) nil))
+#+end_src
+
+These new categories can then be used to define [[*Keymaps][Embark keymaps]] for minibuffer completion.
+
+** Operation Hints
+
+I like having hints that show how large the editing operation I just performed was, but the =ophints= module in Doom doesn't look very good to me (it gets rid of pulses and color), so I'll override it.
+
+#+begin_src emacs-lisp :tangle modules/ui/ophints/packages.el
+;; -*- no-byte-compile: t; -*-
+;;; ui/ophints/packages.el
+
+(package! evil-goggles)
+#+end_src
+
+#+begin_src emacs-lisp :tangle modules/ui/ophints/config.el
+;;; -*- lexical-binding: t; -*-
+;;; ui/ophints/config.el
+
+(use-package! evil-goggles
+  :hook (doom-first-input . evil-goggles-mode)
+  :init
+  (setq evil-goggles-duration 0.15
+        evil-goggles-blocking-duration 0.12
+        evil-goggles-async-duration 0.2)
+  :config
+  (pushnew! evil-goggles--commands
+            '(evil-magit-yank-whole-line
+              :face evil-goggles-yank-face
+              :switch evil-goggles-enable-yank
+              :advice evil-goggles--generic-async-advice)
+            '(+evil:yank-unindented
+              :face evil-goggles-yank-face
+              :switch evil-goggles-enable-yank
+              :advice evil-goggles--generic-async-advice)
+            '(+eval:region
+              :face evil-goggles-yank-face
+              :switch evil-goggles-enable-yank
+              :advice evil-goggles--generic-async-advice)
+            '(evil-fill
+              :face evil-goggles-fill-and-move-face
+              :switch evil-goggles-enable-fill-and-move
+              :advice evil-goggles--generic-async-advice)
+            '(evil-fill-and-move
+              :face evil-goggles-fill-and-move-face
+              :switch evil-goggles-enable-fill-and-move
+              :advice evil-goggles--generic-async-advice))
+  (custom-set-faces! '(evil-goggles-default-face :background "#2b3a7f")
+                     '(evil-goggles-delete-face :inherit magit-diff-removed-highlight)
+                     '(evil-goggles-paste-face :inherit magit-diff-added-highlight)
+                     '(evil-goggles-change-face :inherit evil-goggles-delete-face)))
+#+end_src
+
+** Snippets
+
+#+call: confpkg("!Pkg yasnippet")
+
+Snippets are an extremely versatile way of avoiding unnecessary typing, especially when writing code.
+
+*** Tweaks
+
+Allow nested snippets:
+
+#+begin_src emacs-lisp
+(after! yasnippet
+  (setq yas-triggers-in-field t))
+#+end_src
+
+*** Editing Snippets
+
+Snippets are edited by visiting their file in ~snippet-mode~, which defines some useful keybindings for working with the snippet.
+
+**** Trailing Newlines
+
+If there are any trailing newlines in the snippet file, they will be inserted when the snippet is expanded. This may not always be desirable, so we should prevent Emacs from automatically inserting trailing newlines in these buffers.
+
+#+begin_src emacs-lisp
+(add-hook! snippet-mode
+  (setq-local require-final-newline nil))
+#+end_src
+
+**** Testing
+
+When editing a snippet, the binding =C-c C-t= can be used to test it in a fresh buffer. This is very useful, but with Evil it has the issue of leaving the editor in normal state, when snippets are designed to be expanded in insert state.
+
+#+begin_src emacs-lisp
+(defadvice! ~/yas-tryout-insert-mode (&rest _)
+  "Switch to Insert state when trying out a snippet."
+  :after #'yas-tryout-snippet
+  (evil-insert-state))
+#+end_src
+
+*** Creating New Snippets
+
+Doom's command to create a new snippet, ~+snippets/new~, defines a template inside of itself purely for when creating a snippet through this command. This doesn't make much sense to me when file templates already exist as a standard system in Doom, so we'll override this function to use that.
+
+#+begin_src emacs-lisp
+(defadvice! ~/snippets-new (&optional all-modes)
+  "Use standard file template when creating a new snippet."
+  :override #'+snippets/new
+  (let* ((mode (+snippets--snippet-mode-name-completing-read all-modes))
+         (default-directory (+snippet--ensure-dir (expand-file-name mode +snippets-dir)))
+         (snippet-key (read-string "Enter a key for the snippet: "))
+         (snippet-file-name (expand-file-name snippet-key)))
+    (when (+snippets--use-snippet-file-name-p snippet-file-name)
+      (switch-to-buffer snippet-key)
+      (snippet-mode)
+      (erase-buffer)
+      (set-visited-file-name snippet-file-name)
+      (+file-templates--expand t))))
+#+end_src
+
+Since the snippet is expanded in an environment including the variable ~snippet-key~, our template can use that to automatically fill in the key we specified.
+
 ** Treemacs
 
 #+call: confpkg("!Pkg treemacs")
@@ -2041,66 +2151,6 @@ Set ~vterm~ to use =fish= as its shell:
 #+begin_src emacs-lisp
 (after! vterm
   (setq-default vterm-shell (executable-find "fish")))
-#+end_src
-
-** Operation Hints
-
-I like having hints that show how large the editing operation I just performed was, but the =ophints= module in Doom doesn't look very good to me (it gets rid of pulses and color), so I'll override it.
-
-#+begin_src emacs-lisp :tangle modules/ui/ophints/packages.el
-;; -*- no-byte-compile: t; -*-
-;;; ui/ophints/packages.el
-
-(package! evil-goggles)
-#+end_src
-
-#+begin_src emacs-lisp :tangle modules/ui/ophints/config.el
-;;; -*- lexical-binding: t; -*-
-;;; ui/ophints/config.el
-
-(use-package! evil-goggles
-  :hook (doom-first-input . evil-goggles-mode)
-  :init
-  (setq evil-goggles-duration 0.15
-        evil-goggles-blocking-duration 0.12
-        evil-goggles-async-duration 0.2)
-  :config
-  (pushnew! evil-goggles--commands
-            '(evil-magit-yank-whole-line
-              :face evil-goggles-yank-face
-              :switch evil-goggles-enable-yank
-              :advice evil-goggles--generic-async-advice)
-            '(+evil:yank-unindented
-              :face evil-goggles-yank-face
-              :switch evil-goggles-enable-yank
-              :advice evil-goggles--generic-async-advice)
-            '(+eval:region
-              :face evil-goggles-yank-face
-              :switch evil-goggles-enable-yank
-              :advice evil-goggles--generic-async-advice)
-            '(evil-fill
-              :face evil-goggles-fill-and-move-face
-              :switch evil-goggles-enable-fill-and-move
-              :advice evil-goggles--generic-async-advice)
-            '(evil-fill-and-move
-              :face evil-goggles-fill-and-move-face
-              :switch evil-goggles-enable-fill-and-move
-              :advice evil-goggles--generic-async-advice))
-  (custom-set-faces! '(evil-goggles-default-face :background "#2b3a7f")
-                     '(evil-goggles-delete-face :inherit magit-diff-removed-highlight)
-                     '(evil-goggles-paste-face :inherit magit-diff-added-highlight)
-                     '(evil-goggles-change-face :inherit evil-goggles-delete-face)))
-#+end_src
-
-** YASnippet
-
-#+call: confpkg("!Pkg yasnippet")
-
-Allow nested snippets:
-
-#+begin_src emacs-lisp
-(after! yasnippet
-  (setq yas-triggers-in-field t))
 #+end_src
 
 * Applications
@@ -2236,33 +2286,6 @@ Calc doesn't use faces to show selections by default, which I think is rather st
   ))
 #+end_src
 
-** TODO Mail
-
-#+call: confpkg()
-
-I use =isync=, =msmtp= and =mu= as Doom Emacs recommends.
-
-#+begin_src emacs-lisp
-(after! mu4e
-  (setq sendmail-program (executable-find "msmtp")
-        send-mail-function #'smtpmail-send-it
-        message-sendmail-f-is-evil t
-        message-sendmail-extra-arguments '("--read-envelope-from")
-        message-send-mail-function #'message-send-mail-with-sendmail))
-#+end_src
-
-*** Accounts
-
-#+begin_src emacs-lisp
-(set-email-account! "gmail"
-                    '((mu4e-sent-folder       . "/gmail/[Gmail]/Sent Mail")
-                      (mu4e-drafts-folder     . "/gmail/[Gmail]/Drafts")
-                      (mu4e-trash-folder      . "/gmail/[Gmail]/Trash")
-                      (mu4e-refile-folder     . "/gmail/[Gmail]/All Mail")
-                      (smtpmail-smtp-user     . "kiana.a.sheibani@gmail.com"))
-                    t)
-#+end_src
-
 ** Calendar
 
 #+call: confpkg()
@@ -2280,25 +2303,6 @@ The calendar's main purpose for me is to give a better view of the [[*Agenda][Or
 (map! :leader
       :desc "Calendar"
       "o c" #'cfw:open-org-calendar)
-#+end_src
-
-** Password Management
-
-#+call: confpkg("Pass")
-
-I use the standard Unix-style password management system, [[https://www.passwordstore.org/][pass]].
-
-#+begin_src emacs-lisp
-(map! :leader
-      :desc "Password Store"
-      "o s" #'pass)
-
-(after! password-store
-  (setq pass-show-keybindings nil      ; Keybindings take up too much space
-        pass-suppress-confirmations t  ; Quit shouldn't need a confirm step
-        )
-  ;; Move to right side
-  (set-popup-rule! "^\\*Password-Store" :side 'right :size 0.25 :quit nil))
 #+end_src
 
 ** Emacs Everywhere
@@ -2333,6 +2337,52 @@ Emacs Everywhere is a great idea. Unfortunately, the default package on MELPA us
      :class window-class
      :title window-title
      :geometry window-dims)))
+#+end_src
+
+** TODO Mail
+
+#+call: confpkg()
+
+I use =isync=, =msmtp= and =mu= as Doom Emacs recommends.
+
+#+begin_src emacs-lisp
+(after! mu4e
+  (setq sendmail-program (executable-find "msmtp")
+        send-mail-function #'smtpmail-send-it
+        message-sendmail-f-is-evil t
+        message-sendmail-extra-arguments '("--read-envelope-from")
+        message-send-mail-function #'message-send-mail-with-sendmail))
+#+end_src
+
+*** Accounts
+
+#+begin_src emacs-lisp
+(set-email-account! "gmail"
+                    '((mu4e-sent-folder       . "/gmail/[Gmail]/Sent Mail")
+                      (mu4e-drafts-folder     . "/gmail/[Gmail]/Drafts")
+                      (mu4e-trash-folder      . "/gmail/[Gmail]/Trash")
+                      (mu4e-refile-folder     . "/gmail/[Gmail]/All Mail")
+                      (smtpmail-smtp-user     . "kiana.a.sheibani@gmail.com"))
+                    t)
+#+end_src
+
+** Password Management
+
+#+call: confpkg("Pass")
+
+I use the standard Unix-style password management system, [[https://www.passwordstore.org/][pass]].
+
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Password Store"
+      "o s" #'pass)
+
+(after! password-store
+  (setq pass-show-keybindings nil      ; Keybindings take up too much space
+        pass-suppress-confirmations t  ; Quit shouldn't need a confirm step
+        )
+  ;; Move to right side
+  (set-popup-rule! "^\\*Password-Store" :side 'right :size 0.25 :quit nil))
 #+end_src
 
 * Org
