@@ -1,6 +1,5 @@
 # -*- mode: snippet -*-
 # name: latex-begin
-# uuid: latex-begin
 # key: begin
 # --
 \begin{${1:equation*}}
