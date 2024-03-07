@@ -1,0 +1,15 @@
+# -*- mode: snippet -*-
+# key: r
+# name: header arg - results
+# condition: (~/yas-org-src-header-p)
+# --
+`(let ((out
+        (->>
+         '((:results "Result collection: " ("value" "output"))
+           (:results "Results type: " ("table" "vector" "list" "verbatim" "file"))
+           (:results "Results format: " ("code" "drawer" "html" "latex" "link" "graphics" "org" "pp" "raw"))
+           (:results "Result output: " ("silent" "replace" "append" "prepend")))
+         (--map (apply #'~/yas-org-prompt-header-arg it))
+         -non-nil
+         (s-join " "))))
+   (if (string= out "") "" (concat ":results " out " ")))`

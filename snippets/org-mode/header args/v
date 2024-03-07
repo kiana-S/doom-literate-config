@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# key: v
+# name: header arg - eval
+# condition: (~/yas-org-src-header-p)
+# --
+`(let ((out (~/yas-org-prompt-header-arg
+             :eval "Evaluate: "
+             '("no" "query" "no-export" "query-export"))))
+   (if out (concat ":eval " out " ") ""))`
