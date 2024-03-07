@@ -2032,7 +2032,7 @@ When I do have a project open, Treemacs is flexible and allows you to open direc
       (treemacs--rerender-after-workspace-change))))
 #+end_src
 
-** TODO VTerm
+** VTerm
 
 #+call: confpkg("!Pkg vterm")
 
