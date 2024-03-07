@@ -2807,39 +2807,31 @@ The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I 
 
 *** Agenda Files
 
-I have a lot of different subdirectories and groupings in my org directory, but unfortunately directories listed in ~org-agenda-files~ aren't checked recursively! I haven't yet found out how to solve this problem directly, so instead I'm going to mitigate it somewhat by recursively adding every subdirectory of my org directory to ~org-agenda-files~.
+I have a lot of different subdirectories and groupings in my org directory, but unfortunately directories listed in ~org-agenda-files~ aren't checked recursively! We can solve this by creating a function ~org-agenda-files-function~ to return the agenda files, then advising Org to call that function before getting the agenda files.
 
 #+begin_src emacs-lisp
-(defun directory-dirs (dirs)
-  "Recursively find all subdirectories of DIRS, ignoring dotfiles."
-  (when dirs
-    (let (result)
-      (dolist (dir dirs)
-        (let ((dir (directory-file-name dir))
-              (files (directory-files dir nil nil t)))
-          (dolist (file files)
-            (unless (= (aref file 0) ?.)
-              (let ((file (concat dir "/" file)))
-                (when (file-directory-p file)
-                  (setq result (cons file result))))))))
-      (append dirs (directory-dirs result)))))
+(defun directory-dirs (dir)
+  "Recursively find all subdirectories of DIR, ignoring dotfiles."
+  (let* ((dir (directory-file-name dir))
+         (files (directory-files dir nil nil t))
+         (dirs (list dir)))
+    (dolist (file files)
+      (unless (= (aref file 0) ?.)
+        (let ((file (concat dir "/" file)))
+          (when (file-directory-p file)
+            (appendq! dirs (directory-dirs file))))))
+    dirs))
+
+(defun org-agenda-files-function ()
+  (directory-dirs org-directory))
 
 (defvar org-agenda-files-function #'org-agenda-files-function
   "The function to determine the org agenda files.")
 
-(defun org-agenda-files-function (get-dirs)
-  (funcall get-dirs (list org-directory)))
-
-(defun ~/org-agenda-files-update (&optional fn)
-  "Populate `org-agenda-files' with the result of calling FN, or
-`org-agenda-files-function' by default."
-  (interactive)
-  (unless fn
-    (setq fn org-agenda-files-function))
-  (setq org-agenda-files (funcall fn #'directory-dirs)))
-
-
-(after! org (~/org-agenda-files-update))
+(defadvice! ~/org-agenda-files (&rest _)
+  "Set `org-agenda-files' before Org fetches them."
+  :before #'org-agenda-files
+  (setq org-agenda-files (funcall org-agenda-files-function)))
 #+end_src
 
 ** Citations
