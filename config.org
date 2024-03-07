@@ -2014,15 +2014,19 @@ When I do have a project open, Treemacs is flexible and allows you to open direc
   (interactive)
   (require 'treemacs)
   (let* ((name (concat "Perspective " (doom-project-name)))
-         (project (treemacs-project->create! :name (doom-project-name) :path (directory-file-name (doom-project-root))
-                                             :path-status 'local-readable :is-disabled? nil))
-         (workspace (treemacs-workspace->create! :name name :projects (list project) :is-disabled? nil)))
+         (project (treemacs-project->create!
+                   :name (doom-project-name)
+                   :path (directory-file-name (doom-project-root))
+                   :path-status 'local-readable :is-disabled? nil))
+         (workspace (treemacs-workspace->create!
+                     :name name :projects (list project) :is-disabled? nil)))
     ;; Only rebuild workspace if it doesn't have the structure we expect
     (unless (equal (treemacs-current-workspace) workspace)
       (setq treemacs--workspaces
-            (append (remove-if (lambda (w) (string= (treemacs-workspace->name w) name))
+            (append (remove-if (lambda (w)
+                                 (string= (treemacs-workspace->name w) name)
                                treemacs--workspaces)
-                    (list workspace)))
+                    (list workspace))))
       (treemacs-do-switch-workspace workspace)
       (treemacs--invalidate-buffer-project-cache)
       (treemacs--rerender-after-workspace-change))))
