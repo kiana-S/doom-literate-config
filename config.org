@@ -83,7 +83,7 @@ If you're reading the raw org file instead of the published version, the code fo
 #+end_src
 
 #+header: :tangle (expand-file-name (make-temp-name "emacs-org-babel-excuses/confpkg-prepare-") temporary-file-directory)
-#+begin_src emacs-lisp :noweb no-export :export-embed no
+#+begin_src emacs-lisp :noweb no-export
 <<confpkg-prepare()>>
 #+end_src
 
