@@ -2295,7 +2295,9 @@ The calendar's main purpose for me is to give a better view of the [[*Agenda][Or
 #+begin_src emacs-lisp
 (after! calendar
   ;; Start week on Monday
-  (setq calendar-week-start-day 1))
+  (setq calendar-week-start-day 1)
+  ;; ISO date style
+  (calendar-set-date-style 'iso))
 
 (after! calfw
   (setq cfw:org-face-agenda-item-foreground-color (doom-color 'yellow)))
