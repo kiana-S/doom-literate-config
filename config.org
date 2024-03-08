@@ -3003,7 +3003,11 @@ A full week-long agenda is usually too cluttered for me to read, so I'll narrow 
         '((agenda habit-down time-up urgency-down category-up)
           (todo urgency-down time-up category-up)
           (tags urgency-down time-up category-up)
-          (search category-up))))
+          (search category-up))
+
+        ;; Make sure agenda is the only window
+        org-agenda-window-setup 'only-window
+        org-agenda-restore-windows-after-quit t))
 #+end_src
 
 *** Agenda View
