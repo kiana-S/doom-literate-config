@@ -2812,17 +2812,16 @@ Org mode offers a useful tag hierarchy system, configured via ~org-tag-alist~. W
 
   (setq org-tag-persistent-alist
         `(("area" . ?A) ("goal" . ?G) ("project" . ?P) ("meta" . ?M)
-          (:newline)
+
           ;; Topics
+          (:startgrouptag) ("college")
+          (:grouptags) ("assign") ("notes") (:endgrouptag)
 
           ("economics") ("polsci") ("math") ("history")
           (:startgrouptag) ("math")
           (:grouptags) ("calculus") ("algebra") (:endgrouptag)
 
           ;; Classes
-          (:startgrouptag) ("college")
-          (:grouptags) ("assign") ("notes") (:endgrouptag)
-
           (:startgroup) ("college")
           (:grouptags) ("TR") ("MWF") ("Online") (:endgroup)
 
