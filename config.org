@@ -2504,25 +2504,6 @@ It's sometimes nice to be able to click a link in an Org file that takes me to o
 
 ** Enhancements
 
-*** Export Directory
-
-Org mode by default exports to the same directory the org-mode file is in. This is inconvenient for me, as I use a lot of subdirectories. To fix this, we can advise the function ~org-export-output-file-name~.
-
-#+begin_src emacs-lisp
-(defvar org-export-dir (expand-file-name "export/" org-directory)
-  "The directory to export Org mode files to.
-
-If nil, then `default-directory' for the org buffer is used.")
-
-(defadvice! ~/modify-org-export-dir (orig-fn extension &optional subtreep pub-dir)
-  :around #'org-export-output-file-name
-  (unless pub-dir
-    (setq pub-dir org-export-dir))
-  (unless (file-directory-p pub-dir)
-    (make-directory pub-dir t))
-  (funcall orig-fn extension subtreep pub-dir))
-#+end_src
-
 *** Todo Date Overriding
 
 My attention span being what it is, I often forget to update TODO entries in my Org files until long after the task has been completed. I rely heavily on tracking TODOs through timestamps, so it would be nice to have a command to override the date. To do this, we can create a new variable ~org-todo-time~ that will specify the time to update TODOs with.
@@ -2643,6 +2624,25 @@ or no selection is made: nil is returned."
 #+end_src
 
 ** Bug Fixes and Tweaks
+
+*** Export Directory
+
+Org mode by default exports to the same directory the org-mode file is in. This is inconvenient for me, as I use a lot of subdirectories. To fix this, we can advise the function ~org-export-output-file-name~.
+
+#+begin_src emacs-lisp
+(defvar org-export-dir (expand-file-name "export/" org-directory)
+  "The directory to export Org mode files to.
+
+If nil, then `default-directory' for the org buffer is used.")
+
+(defadvice! ~/modify-org-export-dir (orig-fn extension &optional subtreep pub-dir)
+  :around #'org-export-output-file-name
+  (unless pub-dir
+    (setq pub-dir org-export-dir))
+  (unless (file-directory-p pub-dir)
+    (make-directory pub-dir t))
+  (funcall orig-fn extension subtreep pub-dir))
+#+end_src
 
 *** Attachment Inline Previews
 
