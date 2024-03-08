@@ -3291,3 +3291,62 @@ Operators being in italics looks ugly in this mode too, but unfortunately due to
     `(idris-semantic-function-face :foreground ,(doom-color 'dark-green))
     `(idris-semantic-postulate-face :foreground ,(doom-color 'yellow))))
 #+end_src
+
+* Scratch
+
+#+call: confpkg()
+
+This section is for code with little or no associated documentation. This could be because the code is:
+
+1. Temporary
+2. Unimportant
+3. Self-explanatory
+4. Just not really worth the time it takes to write these explanations
+
+** Org
+
+*** Automate Problem List
+
+#+begin_src emacs-lisp
+(defvar ~/org-problem-spec-alist nil
+  "An alist of regexps matching problem specs.")
+
+(setq ~/org-problem-spec-alist
+  `((,(rx (group (+ digit))
+          (* space) "-" (* space)
+          (group (+ digit))
+          (* space) "odd")
+     . ,(lambda (beg end)
+          (when (cl-evenp beg) (cl-incf beg))
+          (number-sequence beg end 2)))
+    (,(rx (group (+ digit))
+          (* space) "-" (* space)
+          (group (+ digit))
+          (* space) "even")
+     . ,(lambda (beg end)
+          (when (cl-oddp beg) (cl-incf beg))
+          (number-sequence beg end 2)))
+    (,(rx (group (+ digit))
+          (* space) "-" (* space)
+          (group (+ digit))) . number-sequence)
+    (,(rx (group (+ digit))) . list)))
+
+
+(defun ~/org-generate-problem-list (&rest specs)
+  (interactive (s-split "," (read-from-minibuffer "Problems: ")))
+  (let* ((alist ~/org-problem-spec-alist)
+         (problems
+          (mapcan
+           (lambda (spec)
+             (let* ((match (car (or (--keep
+                                     (when-let ((x (cdr-safe
+                                                    (s-match (car it) spec))))
+                                       (cons x (cdr it)))
+                                     alist)
+                                    (user-error "Invalid problem spec")))))
+               (apply (cdr match) (mapcar #'string-to-number (car match)))))
+           specs)))
+    (insert "\n")
+    (dolist (num problems)
+      (insert (format "- [ ] %d\n" num)))))
+#+end_src
