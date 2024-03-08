@@ -1291,7 +1291,7 @@ Everything else goes in ~config.el~, which is managed by [[*=confpkg=][confpkg]]
 
 ** Company
 
-#+call: confpkg("!Pkg company")
+#+call: confpkg("Pkg: company")
 
 *** TODO Optimization
 
@@ -1315,7 +1315,7 @@ When Company is active, its keybindings overshadow the default ones, meaning key
 
 *** Spell Correction
 
-#+call: confpkg("!Pkg company-spell")
+#+call: confpkg("Pkg: company-spell")
 
 I've been having problems with ~company-ispell~, mainly due to Ispell requiring a text-based dictionary (unlike Aspell, which uses a binary dictionary). So let's switch to ~company-spell~:
 
@@ -1369,7 +1369,7 @@ The ~company-box~ front-end adds support for icons, but there aren't many provid
 
 ** Eldoc
 
-#+call: confpkg("!Pkg eldoc")
+#+call: confpkg("Pkg: eldoc")
 
 We'll switch the default docstring handler to ~eldoc-documentation-compose~, since that provides the most information and I don't mind the space it takes up.
 
@@ -1380,7 +1380,7 @@ We'll switch the default docstring handler to ~eldoc-documentation-compose~, sin
 
 ** Embark
 
-#+call: confpkg("!Pkg embark")
+#+call: confpkg("Pkg: embark")
 
 When I first learned about Embark and began to use it, I was a bit disappointed by its defaults, especially since Doom Emacs is normally great when it comes to ensuring good defaults. I eventually went ahead and looked through every aspect of Embark to see what needed to change.
 
@@ -1792,7 +1792,7 @@ Here's the big one.
 
 ** Evil
 
-#+call: confpkg("!Pkg evil")
+#+call: confpkg("Pkg: evil")
 
 #+begin_src emacs-lisp
 (after! evil
@@ -1812,7 +1812,7 @@ While we're here, we'll also set my preferred =evil-escape= keys:
 
 ** Flymake
 
-#+call: confpkg("!Pkg flymake")
+#+call: confpkg("Pkg: flymake")
 
 I really like Flycheck's double-arrow fringe indicator, so let's quickly steal that:
 
@@ -1875,7 +1875,7 @@ Having an IDE-style tooltip pop up is nice, but ~flymake-popon~ is a bit ugly by
 
 ** Indent Guides
 
-#+call: confpkg("!Pkg highlight-indent-guides")
+#+call: confpkg("Pkg: highlight-indent-guides")
 
 I've found that character-based indent guides work best.
 
@@ -1890,7 +1890,7 @@ I've found that character-based indent guides work best.
 
 ** Language Servers
 
-#+call: confpkg("!Pkg lsp")
+#+call: confpkg("Pkg: lsp")
 
 ~lsp-mode~ requires ~avy~, but doesn't load it for some reason.
 
@@ -1908,7 +1908,7 @@ Here's a convenient leader key binding as well:
 
 ** Magit
 
-#+call: confpkg("!Pkg magit")
+#+call: confpkg("Pkg: magit")
 
 [[https://magit.vc/][Magit]] is already great, but it could use some proper syntax highlighting!
 
@@ -1923,7 +1923,7 @@ Here's a convenient leader key binding as well:
 
 ** Marginalia
 
-#+call: confpkg("!Pkg marginalia")
+#+call: confpkg("Pkg: marginalia")
 
 Marginalia mostly works fine on its own, but we should add a few more Doom-specific prompt categories to its registry.
 
@@ -1996,7 +1996,7 @@ I like having hints that show how large the editing operation I just performed w
 
 ** Snippets
 
-#+call: confpkg("!Pkg yasnippet")
+#+call: confpkg("Pkg: yasnippet")
 
 Snippets are an extremely versatile way of avoiding unnecessary typing, especially when writing code.
 
@@ -2057,7 +2057,7 @@ Since the snippet is expanded in an environment including the variable ~snippet-
 
 ** Treemacs
 
-#+call: confpkg("!Pkg treemacs")
+#+call: confpkg("Pkg: treemacs")
 
 Treemacs is a really useful package, but it also has a lot of defaults I don't like. Let's add a ~use-package!~ declaration to fix some of them:
 
@@ -2144,7 +2144,7 @@ When I do have a project open, Treemacs is flexible and allows you to open direc
 
 ** VTerm
 
-#+call: confpkg("!Pkg vterm")
+#+call: confpkg("Pkg: vterm")
 
 Set ~vterm~ to use =fish= as its shell:
 
@@ -2687,7 +2687,7 @@ Org mode offers a useful tag hierarchy system, configured via ~org-tag-alist~. W
 
 ** Org Roam
 
-#+call: confpkg()
+#+call: confpkg("Org: Roam")
 
 When I started out using Org mode, I just used vanilla Org files to manage my notes. This worked, but as my notes grew more and more I've begun to increasingly rely on [[https://www.orgroam.com/][Org-roam]] to more systematically manage my organization.
 
@@ -2836,7 +2836,7 @@ I don't use these very often currently, and am reconsidering whether I should re
 
 ** Agenda
 
-#+call: confpkg("Org Agenda")
+#+call: confpkg("Org: Agenda")
 
 *** Configuration
 
@@ -2959,7 +2959,7 @@ I have a lot of different subdirectories and groupings in my org directory, but 
 
 ** Citations
 
-#+call: confpkg("Org Cite")
+#+call: confpkg("Org: Cite")
 
 Org mode has a very robust system for specifying citations, one which is taken advantage of by the package =citar=.
 
@@ -3014,7 +3014,7 @@ And we should also make it look a little prettier:
 
 ** Journal
 
-#+call: confpkg("Org Journal")
+#+call: confpkg("Org: Journal")
 
 I don't use ~org-journal~ anymore, but I'm keeping my old configuration for it in case I want to go back.
 
@@ -3046,7 +3046,7 @@ Despite Emacs being my editor of choice for programming, I don't actually have a
 
 ** Dired
 
-#+call: confpkg("!Mode dired")
+#+call: confpkg("Mode: Dired")
 
 Dired by default spawns a new buffer for every directory, which clutters up your buffer list very quickly.
 
@@ -3057,7 +3057,7 @@ Dired by default spawns a new buffer for every directory, which clutters up your
 
 ** Haskell
 
-#+call: confpkg("!Mode haskell")
+#+call: confpkg("Mode: Haskell")
 
 Operators being in italics looks ugly, so let's fix that.
 
