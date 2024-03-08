@@ -2858,16 +2858,17 @@ Areas are stored as subnodes of the =Areas= file node, and likewise for goals. T
 #+begin_src emacs-lisp
 (defun ~/org-roam-get-linked-nodes (node tag)
   "Return the nodes that NODE links to that are tagged with TAG."
-  (let* ((response (org-roam-db-query [:select :distinct [dest]
-                                       :from links
-                                       :where (= source $s1)
-                                       :and (= type "id")
-                                       :group :by dest]
-                                      (org-roam-node-id node)))
-         (ids (mapcar #'car response)))
-    (--keep (let ((node (org-roam-node-from-id it)))
-              (when (-contains? (org-roam-node-tags node) tag)
-                node)) ids)))
+  (let ((response (org-roam-db-query [:select :distinct [dest]
+                                      :from links
+                                      :inner-join tags :on (= dest node_id)
+                                      :where (= source $s1)
+                                      :and (= type "id")
+                                      :and (= tag $s2)
+                                      :group :by dest]
+                                     (org-roam-node-id node) tag)))
+    (mapcar (lambda (id) (org-roam-populate
+                          (org-roam-node-create :id (car id))))
+            response)))
 #+end_src
 
 *** Roam Buffer
