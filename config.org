@@ -2793,6 +2793,23 @@ The command ~+org/dwim-at-point~ will toggle all overlays in a subtree even if t
             (org-element-property :end context))))))))
 #+end_src
 
+*** Default Categories
+
+When an explicit category is not specified, Org mode typically defaults to the filename (sans extension). This ... sort of makes sense? I guess? It doesn't really, because filename conventions don't make for good category names. This is especially bad for Org-roam, where filenames contain timestamps that make them absolutely massive and unwieldy.
+
+To fix this issue, it is thankfully rather simple to patch Org-mode's category system to use a different system for default categories[fn:1]. The following code sets it up so that the file's =#+title= metadata is used as the default category, falling back on the filename if a title is not given.
+
+#+begin_src emacs-lisp
+(defadvice! ~/org-default-category (old-fn)
+  "Modify how Org resolves the default category through the
+`org-category' variable."
+  :around '(org-refresh-category-properties org-element--get-category)
+  (let ((org-category (or org-category (org-get-title))))
+    (funcall old-fn)))
+#+end_src
+
+[fn:1] Where by "simple" I mean that it took me multiple hours of combing through Org's source code in order to find the multiple places(???) where this behavior was implemented and to figure out how to modify it. At least the final code is short!
+
 ** Tags
 
 Org mode offers a useful tag hierarchy system, configured via ~org-tag-alist~. We'll be using ~org-tag-persistent-alist~ instead so that our tag hierarchy can't be overwritten.
