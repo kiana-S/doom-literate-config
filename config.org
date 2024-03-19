@@ -2910,8 +2910,7 @@ Areas are stored as subnodes of the =Areas= file node, and likewise for goals. T
                                       :inner-join tags :on (= dest node_id)
                                       :where (= source $s1)
                                       :and (= type "id")
-                                      :and (= tag $s2)
-                                      :group :by dest]
+                                      :and (= tag $s2)]
                                      (org-roam-node-id node) tag)))
     (mapcar (lambda (id) (org-roam-populate
                           (org-roam-node-create :id (car id))))
