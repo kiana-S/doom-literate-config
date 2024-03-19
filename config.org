@@ -3056,6 +3056,9 @@ The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I 
                          (:name "Important"
                           :priority "A"
                           :order 1)
+                         (:name "Notes to Intake"
+                          :tag "notes"
+                          :order 10)
                          (:name "Assignments"
                           :tag "assign"
                           :order 2)
@@ -3066,10 +3069,8 @@ The ~org-agenda~ dispatcher is occasionally useful, but most of the time when I 
                          (:auto-map (lambda (item)
                                       (~/org-agenda-section-by-link
                                        "Area: " "area" item))
-                          :order 4)
-                         (:name "Notes to Intake"
-                          :tag "notes"
-                          :order 10))))))))))
+                          :order 4))))))))))
+
 
 (defun ~/org-agenda (&optional arg)
   "Wrapper around preferred agenda view."
