@@ -2625,6 +2625,36 @@ or no selection is made: nil is returned."
         selection))))
 #+end_src
 
+*** Org Checklist
+
+The simple package =org-checklist= from =org-contrib= makes it so that checkboxes inside of cyclic tasks are reset when the task is repeated. Sounds good to me!
+
+#+begin_src emacs-lisp
+(when (modulep! :lang org)
+  (use-package org-checklist
+    :commands (org-reset-checkbox-state-maybe
+               org-make-checklist-export
+               org-checklist)
+    :init
+    (add-hook 'org-after-todo-state-change-hook #'org-checklist)
+    :config
+    (remove-hook 'org-after-todo-state-change-hook #'org-checklist)
+    (add-hook 'org-after-todo-state-change-hook #'org-checklist)))
+#+end_src
+
+I don't want to have to specify the =RESET_CHECK_BOXES= property for every TODO I write, though. I would much prefer if it was on by default, and the system allowed me to turn it off if I wanted to. Luckily, the fine control Org gives you over property inheritance nicely fixes this problem.
+
+#+begin_src emacs-lisp
+(after! org-checklist
+  (push '("RESET_CHECK_BOXES" . "t") org-global-properties))
+
+(defadvice! ~/org-checklist-reset-inherit ()
+  "Override checkbox resetting to use property inheritance."
+  :override #'org-reset-checkbox-state-maybe
+  (if (org-entry-get (point) "RESET_CHECK_BOXES" t)
+      (org-reset-checkbox-state-subtree)))
+#+end_src
+
 ** Bug Fixes and Tweaks
 
 *** Export Directory
