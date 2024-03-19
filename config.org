@@ -3046,7 +3046,7 @@ A full week-long agenda is usually too cluttered for me to read, so I'll narrow 
         org-agenda-start-on-weekday 1 ; 1 = Monday
 
         org-agenda-sorting-strategy
-        '((agenda habit-down time-up urgency-down category-up)
+        '((agenda time-up habit-down urgency-down category-up)
           (todo urgency-down time-up category-up)
           (tags urgency-down time-up category-up)
           (search category-up))
