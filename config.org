@@ -2317,7 +2317,7 @@ Emacs Everywhere is a great idea. Unfortunately, the default package on MELPA us
 (after! emacs-everywhere
   ;; Shell commands for interacting with window system
   (setq emacs-everywhere-paste-command
-        '("wtype" "-M" "ctrl" "v" "-m" "ctrl")
+        '("wtype" "-M" "shift" "-P" "Insert")
         emacs-everywhere-copy-command
         '("sh" "-c" "wl-copy < %f")
         emacs-everywhere-window-focus-command
