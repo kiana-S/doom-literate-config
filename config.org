@@ -3053,7 +3053,14 @@ A full week-long agenda is usually too cluttered for me to read, so I'll narrow 
 
         ;; Make sure agenda is the only window
         org-agenda-window-setup 'only-window
-        org-agenda-restore-windows-after-quit t))
+        org-agenda-restore-windows-after-quit t
+
+        ;; Agenda prefix
+        org-agenda-prefix-format
+        '((agenda . " %i %-18:c%?-12t% s")
+          (todo . " %i %-18:c")
+          (tags . " %i %-18:c")
+          (search . " %i %-18:c"))))
 #+end_src
 
 *** Agenda View
