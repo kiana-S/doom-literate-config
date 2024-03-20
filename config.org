@@ -1196,6 +1196,10 @@ I have rather specific tastes when it comes to line wrapping. I like soft line w
 (setq-default fill-column 90)      ; More space before wrap
 #+end_src
 
+*** Hacks
+
+**** Evil
+
 For some reason, telling Evil to respect soft line wrapping doesn't change the behavior of =j= and =k=, so I'll do that myself.
 
 #+begin_src emacs-lisp
@@ -1212,7 +1216,9 @@ For some reason, telling Evil to respect soft line wrapping doesn't change the b
       (evil-line-move (- (or count 1))))))
 #+end_src
 
-When a buffer has line numbers, they can interfere with the margins and make them smaller than they need to be.
+**** Line Numbers
+
+When a buffer has line numbers, they can interfere with the margins and make them smaller than they need to be. We can mitigate this issue by adding extra columns to the window.
 
 #+begin_src emacs-lisp
 (add-hook! display-line-numbers-mode
@@ -2506,9 +2512,11 @@ It's sometimes nice to be able to click a link in an Org file that takes me to o
 
 ** Enhancements
 
+While Org-mode provides a very comprehensive set of tools and systems, there are a few small things that are missing or that would make the overall UX smoother. Luckily, Org-mode being implemented as an Emacs package gives us more than enough control over its function to crowbar in a few new features!
+
 *** Todo Date Overriding
 
-My attention span being what it is, I often forget to update TODO entries in my Org files until long after the task has been completed. I rely heavily on tracking TODOs through timestamps, so it would be nice to have a command to override the date. To do this, we can create a new variable ~org-todo-time~ that will specify the time to update TODOs with.
+My attention span being what it is, I often forget to update TODO entries in my Org files until long after the task has been completed. I rely heavily on tracking TODOs through timestamps, so it would be nice to have a command to specify the time to log the task as being completed at. To do this, we can create a new variable ~org-todo-time~ that will override the time when set.
 
 #+begin_src emacs-lisp
 (defvar org-todo-time nil
@@ -2554,9 +2562,9 @@ We can then define and bind alternate versions of ~org-todo~ and ~org-agenda-tod
 
 *** Header Argument Snippets
 
-Writing header arguments is confusing, so let's automate the process somewhat by adding snippets to fill in keywords. To do this, we'll need to write some utility functions for checking if we're in a source block header.
+Writing header arguments for source code blocks is confusing, so let's automate the process somewhat by adding snippets to fill in keywords. To do this, we'll need to write some utility functions for checking if we're in a source block header.
 
-(This is based on the similar code in [[https://tecosaur.github.io/emacs-config/config.html#snippet-helpers][Tecosaur's config]], though I don't care much for auto-filling the source language.)
+(This is based on the similar code in [[https://tecosaur.github.io/emacs-config/config.html#snippet-helpers][Tecosaur's config]], though I've removed some of the features I don't care much for.)
 
 #+begin_src emacs-lisp
 (defun ~/yas-org-src-header-p ()
@@ -2825,7 +2833,7 @@ The command ~+org/dwim-at-point~ will toggle all overlays in a subtree even if t
 
 *** Default Categories
 
-When an explicit category is not specified, Org mode typically defaults to the filename (sans extension). This ... sort of makes sense? I guess? It doesn't really, because filename conventions don't make for good category names. This is especially bad for Org-roam, where filenames contain timestamps that make them absolutely massive and unwieldy.
+When an explicit category is not specified, Org mode typically defaults to the filename (sans extension). This ... sort of makes sense? I guess? It doesn't really, because filename conventions don't make for good category names. This is especially bad for Org-roam, where filenames are automatically generated and can be very large and hard to read.
 
 To fix this issue, it is thankfully rather simple to patch Org-mode's category system to use a different system for default categories[fn:1]. The following code sets it up so that the file's =#+title= metadata is used as the default category, falling back on the filename if a title is not given.
 
