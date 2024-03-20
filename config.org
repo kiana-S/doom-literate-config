@@ -84,6 +84,8 @@ The simultaneous handling of documentation and code inherent to literate program
 
 Instead of documentation having to be bent around the restrictions of source code, the source code can be written and organized with all the freedoms of prose. If written well, the literate program can be structured in a manner closer to how the human mind understands code, rather than how a computer processes it. This is assisted by features such as literate macros and tangling configuration, features intended to break one's code out of the restrictions of standard programming.
 
+It's not the right tool for every codebase, but proper use of literate programming can make a program much, much easier to comprehend and maintain. This is especially true for configuration languages like Emacs Lisp, where much of the code is conceptually disconnected and can easily be split into categories.
+
 *** =confpkg=
 
 As part of their literate config, Tecosaur implemented =confpkg=, an embedded Emacs Lisp library that manages multiple aspects of config tangling:
