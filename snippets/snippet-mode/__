@@ -4,7 +4,7 @@
 # name: Snippet template
 # --
 # -*- mode: snippet -*-
-${1:# contributor: `(user-full-name)`
+${1:# contributor: `user-full-name`
 }# key: ${2:`(or (bound-and-true-p snippet-key) "trigger-key")`}${3:
 # name: $4}
 # --
