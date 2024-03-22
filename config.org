@@ -1260,19 +1260,16 @@ We first need a function to build a flake reference:
 nil if the build fails.
 
 If IMPURE is t, then allow impure builds."
-  (message "Building \"%s\" ..." out)
   (require 'nix) (require 's)
-  (let* ((args `("build" "--no-link" "--print-out-paths"
-                 ,@(if impure "--impure") ,out))
-         (buffer (generate-new-buffer " *nix-process*" t))
-         (status (apply #'call-process nix-executable nil
-                        (list buffer nil) nil args)))
-    (prog1
+  (with-temp-message (format "Building \"%s\" ..." out)
+    (with-temp-buffer
+      (let* ((args `("build" "--no-link" "--print-out-paths"
+                     ,@(if impure "--impure") ,out))
+             (status (apply #'call-process nix-executable nil
+                            (list (current-buffer) nil) nil args)))
         (when (eql status 0)
-          (with-current-buffer buffer
-            (s-trim (buffer-string))))
-      (kill-buffer buffer))))
-    #+end_src
+          (s-trim (buffer-string)))))))
+#+end_src
 
 This works well enough if we just want to build something, but there's a problem: we haven't indicated to Nix that we want this output to stick around, so it will be deleted the next time we garbage collect. To fix this, we can write a wrapper function that also makes the output path a garbage collection root.
 
@@ -1291,6 +1288,7 @@ If IMPURE is t, then allow impure builds."
               (gcdir "/nix/var/nix/gcroots/emacs")
               (sym (expand-file-name name gcdir)))
     (unless (equal path (file-symlink-p sym))
+      (require 'tramp)
       (make-directory (concat "/sudo::" gcdir) t)
       (make-symbolic-link path (concat "/sudo::" sym) t))
     path))
@@ -2034,11 +2032,22 @@ Here's a convenient leader key binding as well:
       "c L" #'lsp-avy-lens)
 #+end_src
 
-** Magit
+** Git
 
 #+call: confpkg("Pkg: magit")
 
-[[https://magit.vc/][Magit]] is already great, but it could use some proper syntax highlighting!
+I use GPG signing for commits, which means that committing often takes longer than the single second timeout. Eight seconds seems like a reasonable amount of time to type in a password.
+
+#+begin_src emacs-lisp
+(after! git-commit
+  (setq git-commit-post-finish-hook-timeout 8))
+#+end_src
+
+*** Magit Syntax Highlighting
+
+#+call: confpkg("Magit Delta")
+
+Magit already looks great, but it could use some proper syntax highlighting!
 
 #+begin_src emacs-lisp :tangle packages.el
 (package! magit-delta)
@@ -2355,29 +2364,9 @@ what type of visual state is currently active."
 
 I want to have vim keybindings in Calc, so let's enable the =evil-collection= module for it. I haven't found a better way to do this than to edit the relevant variable in ~init.el~:
 
-#+begin_src emacs-lisp :tangle init.el :noweb-ref none
+#+begin_src emacs-lisp
 ;; Enable evil-collection-calc
-(setq +evil-collection-disabled-list
-      '(anaconda-mode
-        buff-menu
-        comint
-        company
-        custom
-        eldoc
-        elisp-mode
-        ert
-        free-keys
-        helm
-        help
-        indent
-        image
-        kotlin-mode
-        outline
-        replace
-        shortdoc
-        simple
-        slime
-        lispy))
+(delq 'calc +evil-collection-disabled-list)
 #+end_src
 
 Let's also rebind some keys. Preserving evil's =[= and =]= bindings doesn't make sense to me, and =C-r= makes more sense as a redo binding than =D D=.
@@ -2538,6 +2527,7 @@ Unfortunately, with that power comes a *lot* of configuration work up-front. It 
         org-startup-with-inline-images t   ; Do more stuff on startup
         org-startup-with-latex-preview t
         +org-startup-with-animated-gifs t
+        org-image-actual-width '(550)      ; Default images to 550px
         org-format-latex-options           ; Make latex preview smaller
         (plist-put org-format-latex-options :scale 0.55)
 
@@ -2580,6 +2570,7 @@ There are a few useful functions Doom doesn't bind by default, so let's add them
       "N" #'org-num-mode
       "C" #'org-columns
       "p" #'org-priority ; Remove extraneous commands
+      "g j" #'org-goto
       "c D" #'org-clock-display
       "m b f" #'org-table-eval-formula
       "m b F" #'org-table-edit-formulas
@@ -3069,6 +3060,16 @@ Areas are stored as subnodes of the =Areas= file node, and likewise for goals. T
     (mapcar (lambda (id) (org-roam-populate
                           (org-roam-node-create :id (car id))))
             response)))
+#+end_src
+
+*** TODO Bindings
+
+#+begin_src emacs-lisp
+(map! :mode org-mode
+      :after org
+      :localleader
+      "m l" #'org-roam-link-replace-all
+      "m R" #'org-roam-extract-subtree)
 #+end_src
 
 *** Roam Buffer
