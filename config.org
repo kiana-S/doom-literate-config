@@ -1058,40 +1058,6 @@ I don't want my cache files to get deleted whenever I mess up my Doom install, s
       auth-source-cache-expiry nil)
 #+end_src
 
-** Aesthetics
-
-#+call: confpkg("Visual")
-
-My favorite color theme has always been Tokyo Night. I use it literally everywhere I can, and Doom Emacs is no exception.
-
-#+begin_src emacs-lisp
-(setq doom-theme 'doom-tokyo-night)
-#+end_src
-
-As for font choice, Victor Mono is my preferred coding font. I also use Source Sans Pro as my sans-serif font, though that is more out of obligation than actually liking how it looks.
-
-#+begin_src emacs-lisp
-(setq doom-font (font-spec :family "VictorMono" :size 13)
-      doom-variable-pitch-font (font-spec :family "Source Sans Pro" :size 16))
-#+end_src
-
-I'm a very big fan of how italics look in this font, so let's make more things italicized! While we're here, we'll also set doom's modified buffer font to be red instead of yellow (I like how it looks better).
-
-#+begin_src emacs-lisp
-(custom-set-faces!
-  '(font-lock-comment-face :slant italic)
-  '(font-lock-variable-name-face :slant italic)
-  '(doom-modeline-buffer-modified :weight bold :inherit (doom-modeline error)))
-#+end_src
-
-Some other small aesthetic changes:
-
-#+begin_src emacs-lisp
-(setq nerd-icons-scale-factor 1.1     ; Make icons slightly larger
-      doom-modeline-height 24         ; Make Doom's modeline taller
-      display-line-numbers-type t)    ; Line numbers (absolute)
-#+end_src
-
 ** Bindings
 
 #+call: confpkg()
@@ -1255,9 +1221,17 @@ For some reason, telling Evil to respect soft line wrapping doesn't change the b
       (evil-line-move (- (or count 1))))))
 #+end_src
 
+**** Modeline
+
+The =visual-fill-column= package works by expanding the window's right margin. This causes the right edge of the modeline to follow the margin as well, which looks a bit strange. As a hacky fix, I've found that configuring the the modeline to align itself to the right fringe instead of the right window edge seems to fix the issue.
+
+#+begin_src emacs-lisp
+(setq mode-line-right-align-edge 'right-fringe)
+#+end_src
+
 **** Line Numbers
 
-When a buffer has line numbers, they can interfere with the margins and make them smaller than they need to be. We can mitigate this issue by adding extra columns to the window.
+When a buffer has line numbers, they can interfere with the margins and make the line smaller than it should be. We can mitigate this issue by adding extra columns to the window.
 
 #+begin_src emacs-lisp
 (add-hook! display-line-numbers-mode
@@ -1320,6 +1294,115 @@ If IMPURE is t, then allow impure builds."
       (make-directory (concat "/sudo::" gcdir) t)
       (make-symbolic-link path (concat "/sudo::" sym) t))
     path))
+#+end_src
+
+* Aesthetics
+
+#+call: confpkg("Visual")
+
+If you're going to be staring at your screen for hours a day, you might as well make the thing you're staring at look nice.
+
+** Theme
+
+My favorite color theme has always been Tokyo Night. I use it literally everywhere I can, and Doom Emacs is no exception.
+
+#+begin_src emacs-lisp
+(setq doom-theme 'doom-tokyo-night)
+#+end_src
+
+** Fonts
+
+Victor Mono is my preferred coding font. I also use Source Sans Pro as my sans-serif font, though that is more out of obligation than actually liking how it looks.
+
+#+begin_src emacs-lisp
+(setq doom-font (font-spec :family "VictorMono" :size 13)
+      doom-variable-pitch-font (font-spec :family "Source Sans Pro" :size 16))
+#+end_src
+
+I'm a very big fan of how italics look in this font, so let's make more things italicized! While we're here, we'll also set doom's modified buffer font to be red instead of yellow (I like how it looks better).
+
+#+begin_src emacs-lisp
+(custom-set-faces!
+  '(font-lock-comment-face :slant italic)
+  '(font-lock-variable-name-face :slant italic)
+  '(doom-modeline-buffer-modified :weight bold :inherit (doom-modeline error)))
+#+end_src
+
+Some other small aesthetic changes:
+
+#+begin_src emacs-lisp
+(setq nerd-icons-scale-factor 1.1     ; Make icons slightly larger
+      doom-modeline-height 24         ; Make Doom's modeline taller
+      display-line-numbers-type t)    ; Line numbers (absolute)
+#+end_src
+
+** Dashboard
+
+#+call: confpkg("Dashboard")
+
+There's a lot of reasons why I don't like Spacemacs and why I left it for Doom Emacs (mainly the fact that it's slow and often opaque to the user), but there's one thing that Spacemacs undoubtedly has Doom beat in:
+
+[[https://user-images.githubusercontent.com/33982951/39624821-a4abccee-4f92-11e8-9e91-3d5b542bbb85.png][Spacemacs's dashboard has /impeccable/ style.]]
+
+Doom Emacs tends to favor practicality over aesthetics with a focus on minimalism, and its dashboard is no exception. If we're want something that looks visually appealing, we're going to need a serious overhaul.
+
+*** Splash Banner
+
+The Doom dashboard allows the use of an image for its banner, which supports any image type Emacs can display, including SVG. I have procured an SVG image to use for my dashboard, the classic Emacs E:
+
+#+attr_html: :width 150px
+[[file:assets/splash.svg]]
+
+The obvious choice for the fill color of the image would have been purple, the standard highlight color of my theme, but I wanted the banner to pop out a bit more.
+
+The image can be set like thus:
+
+#+begin_src emacs-lisp
+(setq fancy-splash-image
+      (expand-file-name "assets/splash.svg" doom-private-dir))
+#+end_src
+
+*** Title
+
+Since our banner no longer includes a title, we should add one after the splash image. This title format is inspired by Spacemacs!
+
+#+begin_src emacs-lisp
+(defface doom-dashboard-title
+  '((t (:weight bold :inherit warning)))
+  "Face used for the Doom Emacs title on the dashboard."
+  :group 'doom-dashboard)
+
+(setq +doom-dashboard-banner-padding '(0 . 3))
+(defvar +doom-dashboard-title-padding 3)
+
+(defun doom-dashboard-widget-title ()
+  (when (display-graphic-p)
+    (insert (propertize
+             (+doom-dashboard--center
+              +doom-dashboard--width
+              "[D O O M  E M A C S]")
+             'face 'doom-dashboard-title)
+            (make-string +doom-dashboard-title-padding ?\n))))
+#+end_src
+
+To add the title to the dashboard, we create a new widget that inserts the title string with some padding. We only do this on graphical displays, as non-graphical ones fall back on the default ASCII banner, which includes a title.
+
+*** Other Tweaks
+
+We'll put our title widget into the ~+doom-dashboard-functions~ hook, and while we're at it we'll also get rid of the footer widget, which I don't see much use for.
+
+#+begin_src emacs-lisp
+(setq +doom-dashboard-functions
+      '(doom-dashboard-widget-banner
+        doom-dashboard-widget-title
+        doom-dashboard-widget-shortmenu
+        doom-dashboard-widget-loaded))
+#+end_src
+
+We should also declutter some other aspects of the dashboard. Since the dashboard has load information built into it, I don't see much purpose in printing it to the minibuffer on startup.
+
+#+begin_src emacs-lisp
+(remove-hook 'doom-after-init-hook #'doom-display-benchmark-h)
 #+end_src
 
 * Packages
