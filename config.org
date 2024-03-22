@@ -2840,9 +2840,31 @@ Doom patches Org mode's attachment system to show inline previews of attached im
   (org-link-set-parameters "attachment" :image-data-fun #'+org-image-file-data-fn))
 #+end_src
 
-*** DWIM Command and LaTeX Fragments
+*** Inline Image Previews
 
-The command ~+org/dwim-at-point~ will toggle all overlays in a subtree even if there are other actions that are more likely to be what the user meant (such as marking as DONE). Annoyingly, the only good way to fix this is to completely override the extremely long function.
+Inline images in Org are file links pointing to images without a description. User-defined inline images can have a description, however, which makes for a disparity between file links and other links that is very counter-intuitive. We can advise the image data provider functions to fix this, and I'll add a variable to restore the default behavior if I ever want to.
+
+#+begin_src emacs-lisp
+(defvar +org-inline-image-desc nil
+  "Whether to allow inline images to contain descriptions.")
+
+(defadvice! +org-inline-desc (old-fn protocol link description)
+  "Disable inline images with descriptions when `+org-inline-image-desc'
+is non-nil."
+  :around '(org-yt-image-data-fun
+            +org-inline-image-data-fn
+            +org-http-image-data-fn)
+  (when (or +org-inline-image-desc (null description))
+    (funcall old-fn protocol link description)))
+#+end_src
+
+This works fine for explicitly displaying inline images. However, toggling using =RET= is now broken, as the command does not properly test for inline images. This will be fixed in the next section.
+
+*** DWIM Command
+
+The command ~+org/dwim-at-point~ will toggle all overlays in a subtree even if there are other actions that are more likely to be what the user meant (such as marking as DONE). We also need to change the interaction with links to properly account for whether the link has a description.
+
+Annoyingly, the only good way to fix these issues is to completely override the extremely long function.
 
 #+begin_src emacs-lisp
 (defadvice! ~/org-dwim (old-fn &optional arg)
@@ -2934,7 +2956,9 @@ The command ~+org/dwim-at-point~ will toggle all overlays in a subtree even if t
          (let* ((lineage (org-element-lineage context '(link) t))
                 (path (org-element-property :path lineage)))
            (if (or (equal (org-element-property :type lineage) "img")
-                   (and path (image-type-from-file-name path)))
+                   (and path (image-supported-file-p path)
+                        (or +org-inline-image-desc
+                            (not (org-element-property :contents-begin lineage)))))
                (+org--toggle-inline-images-in-subtree
                 (org-element-property :begin lineage)
                 (org-element-property :end lineage))
