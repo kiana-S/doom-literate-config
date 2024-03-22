@@ -1342,7 +1342,7 @@ There's a lot of reasons why I don't like Spacemacs and why I left it for Doom E
 
 [[https://user-images.githubusercontent.com/33982951/39624821-a4abccee-4f92-11e8-9e91-3d5b542bbb85.png][Spacemacs's dashboard has /impeccable/ style.]]
 
-Doom Emacs tends to favor practicality over aesthetics with a focus on minimalism, and its dashboard is no exception. If we're want something that looks visually appealing, we're going to need a serious overhaul.
+Doom Emacs tends to favor practicality over aesthetics with a focus on minimalism, and its dashboard is no exception. If we want something that looks visually appealing, we're going to need a serious overhaul.
 
 *** Splash Banner
 
@@ -2283,7 +2283,7 @@ When I do have a project open, Treemacs is flexible and allows you to open direc
 
 #+call: confpkg("Pkg: vterm")
 
-Set ~vterm~ to use =fish= as its shell:
+I've set my default Emacs shell to =bash=, since pointing Emacs to a non-POSIX shell like =fish= (my usual default) can cause incompatibility issues. I still want to use =fish= for my own purposes, though, so we'll set it as the shell in ~vterm~:
 
 #+begin_src emacs-lisp
 (after! vterm
@@ -2799,7 +2799,7 @@ If nil, then `default-directory' for the org buffer is used.")
 
 *** Attachment Inline Previews
 
-Doom patches Org mode's attachment system to show inline previews of attached images. However, this appears to be broken due to using outdated APIs, so we have to patch the link parameter responsible.
+Doom enhances Org mode's attachment system to show inline previews of attached images. However, this appears to be broken due to using outdated APIs, so we have to patch the link parameter responsible.
 
 #+begin_src emacs-lisp
 (defadvice! ~/org-image-file-data-fn (protocol link _description)
@@ -3395,7 +3395,7 @@ To make opening the journal more convenient, here's a command to open the latest
 
 * Languages and Modes
 
-Despite Emacs being my editor of choice for programming, I don't actually have a lot of configuration for programming languages. I suppose that this is because language packages tend to not need much configuration, as the bounds of what a language mode needs to do are typically defined by the language itself.
+Despite Emacs being my editor of choice for programming, I don't actually have a lot of configuration for programming languages. I suppose that this is because language packages tend to not need much personal configuration, as the bounds of what a language mode needs to do are typically defined by the language itself.
 
 ** Dired
 
