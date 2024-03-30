@@ -86,7 +86,17 @@ Instead of documentation having to be bent around the restrictions of source cod
 
 It's not the right tool for every codebase, but proper use of literate programming can make a program much, much easier to comprehend and maintain. This is especially true for configuration languages like Emacs Lisp, where much of the code is conceptually disconnected and can easily be split into categories.
 
-*** =confpkg=
+** Current Issues
+
+*** Mail
+
+My mail client currently requires GPG access to sync emails, which doesn't properly work. Using the mail client requires running ~mbsync -a~ externally instead.
+
+*** Org Mode
+
+A lot of my current Org mode configuration consists of relics of previous organizational systems, including the TODO states and capture templates. I don't currently use these, as most of my Org mode use has shifted towards Org-roam, so it might be a good idea to replace these with something more useful.
+
+* =confpkg=
 
 As part of their literate config, Tecosaur implemented =confpkg=, an embedded Emacs Lisp library that manages multiple aspects of config tangling:
 
@@ -101,13 +111,14 @@ Luckily, I don't need to be able to understand code in order to do what I do bes
 
 If you're reading the raw org file instead of the published version, the code for =confpkg= is below. It is mostly unchanged, aside from these tweaks:
 
-- Prevent the code from being exported
-- Reorganize to get rid of superfluous noweb references
 - Change the package template to contain my information
+- Reorganize to get rid of superfluous noweb references
+- Prevent the code from being exported
+- Allow package statements anywhere in subconfig files, rather than only at the beginning
 
-**** confpkg :noexport:
+** confpkg :noexport:
 
-***** Preparation
+*** Preparation
 
 #+name: confpkg-prepare
 #+begin_src emacs-lisp
@@ -126,7 +137,7 @@ If you're reading the raw org file instead of the published version, the code fo
 <<confpkg-prepare()>>
 #+end_src
 
-***** Setup
+*** Setup
 
 #+name: confpkg-setup
 #+begin_src emacs-lisp :results silent :noweb no-export
@@ -388,7 +399,7 @@ If you're reading the raw org file instead of the published version, the code fo
 
 #+call: confpkg-setup[:results none]()
 
-***** Confpkg Dispatch
+*** Confpkg Dispatch
 
 #+name: confpkg
 #+begin_src elisp :var name="" needs="" after="" pre="" prefix="config-" via="copy" :results silent raw :noweb no-export
@@ -493,7 +504,7 @@ If you're reading the raw org file instead of the published version, the code fo
 ;;; %p.el ends here
 #+end_src
 
-***** Quieter Output
+*** Quieter Output
 
 #+name: confpkg-quieter-output
 #+begin_src emacs-lisp
@@ -512,7 +523,7 @@ If you're reading the raw org file instead of the published version, the code fo
 
 #+call: confpkg-quieter-output()
 
-***** CLI
+*** CLI
 
 #+begin_src emacs-lisp :tangle cli.el :noweb-ref none
 ;;; cli.el -*- lexical-binding: t; -*-
@@ -524,7 +535,7 @@ If you're reading the raw org file instead of the published version, the code fo
 (advice-add 'org-babel-execute-src-block :around #'doom-shut-up-a)
 #+end_src
 
-***** Timings
+*** Timings
 
 #+call: confpkg("Confpkg timings")
 
@@ -729,16 +740,6 @@ NODE defaults to the root node."
           (goto-char (point-min)))
         (pop-to-buffer buf)))))
 #+end_src
-
-** Current Issues
-
-*** Mail
-
-My mail client currently requires GPG access to sync emails, which doesn't properly work. Using the mail client requires running ~mbsync -a~ externally instead.
-
-*** Org Mode
-
-A lot of my current Org mode configuration consists of relics of previous organizational systems, including the TODO states and capture templates. I don't currently use these, as most of my Org mode use has shifted towards Org-roam, so it might be a good idea to replace these with something more useful.
 
 * Doom Modules
 
