@@ -3084,37 +3084,6 @@ The unlinked references section is turned off by default for performance reasons
           org-roam-unlinked-references-section)))
 #+end_src
 
-*** Roam Capture
-
-Creating new nodes should be quick and easy, so we should stick to one template to avoid the hassle of choosing.
-
-#+begin_src emacs-lisp
-(defun org-roam-node-file-maybe (node &optional dir)
-  "Get file name from NODE, or return a default filename in directory DIR."
-  (unless dir (setq dir org-roam-directory))
-  (or (org-roam-node-file node)
-      (expand-file-name (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
-                        dir)))
-
-(defun org-roam-node-file-maybe-pick-dir (node)
-  "Get file name from NODE, or ask for directory and return a default filename."
-  (or (org-roam-node-file node)
-      (expand-file-name (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
-                        (read-directory-name "Directory: " org-roam-directory))))
-
-
-(after! org-roam
-  (setq org-roam-capture-templates
-        '(("d" "Default" plain "%?"
-           :target (file+head "${file-maybe-pick-dir}"
-                              "#+title: ${title}")
-           :unnarrowed t))
-        org-roam-dailies-capture-templates
-        '(("d" "Default" entry "* %?"
-           :target (file+head "%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>")))))
-#+end_src
-
 *** Roam Links
 
 Making links to Roam nodes is a bit finicky. This helps fix some of that.
@@ -3133,57 +3102,131 @@ Making links to Roam nodes is a bit finicky. This helps fix some of that.
                            :insert-description #'org-roam-insert-description))
 #+end_src
 
-** Capture Templates
+** Capture
 
-I don't use these very often currently, and am reconsidering whether I should rework them entirely. These might change soon!
+Org capture is a very useful mechanism for shortening the time it takes to "capture" information in your notes. The default method for configuring capture is the variable ~org-capture-templates~, which specifies templates to generate new entries with.
+
+*** YASnippet Integration
+
+These templates are all well and good, but there's a crucial issue with them: we already have a perfectly good template system! [[*Snippets][Snippets]] are highly versatile and useful, and it would be nice if we could leverage their features in Org capture templates.
+
+The goal is to hook into Org's capturing system to get it to feed its template into YASnippet, instead of printing it directly.
 
 #+begin_src emacs-lisp
-(defun ~/org-project-find-heading ()
-  "Find heading in org project file."
-  (beginning-of-buffer)
-  ;; (unless (string-match-p "\\`\\s-*$" (thing-at-point 'line))
-  ;;   (insert "\n")
-  ;;   (beginning-of-buffer))
-  (when (y-or-n-p "Insert project at heading? ")
-    (require 'consult-org)
-    ;; Prevent consult from trying to recenter the window
-    ;; after capture has already hidden the buffer
-    (let (consult-after-jump-hook)
-      (consult--read
-       (consult--slow-operation "Collecting headings..."
-         (or (consult-org--headings nil "-project" nil)
-             (user-error "No headings")))
-       :prompt "Heading: "
-       :category 'consult-org-heading
-       :sort nil
-       :require-match t
-       :history '(:input consult-org--history)
-       :narrow (consult-org--narrow)
-       :state (consult--jump-state)
-       :group nil
-       :lookup #'consult--lookup-candidate))))
+(defadvice! org-capture-yasnippet (old-fn &optional arg)
+  "Modify Org's capture system to expand a YASnippet template."
+  :around #'org-capture-place-template
+  (let* ((template (org-capture-get :template))
+         (org-capture-plist (plist-put org-capture-plist :template "")))
+    (cl-letf (((symbol-function 'org-kill-is-subtree-p) #'always))
+      (funcall old-fn arg)
+      (yas-expand-snippet
+       (concat (pcase (org-capture-get :type)
+                 ('entry "`(make-string (org-outline-level) ?*)`"))
+               template)))))
+#+end_src
 
-(after! org
-  (setq org-capture-templates
-        '(("t" "Task")
-          ("tt" "Task" entry (file+headline "events.org" "Tasks")
-           "* TODO %?" :empty-lines 1)
-          ("td" "Task with Deadline" entry (file+headline "events.org" "Tasks")
-           "* TODO %?\nDEADLINE: %^{Deadline}T" :empty-lines 1)
-          ("tD" "Task with Deadline (date only)" entry (file+headline "events.org" "Tasks")
-           "* TODO %?\nDEADLINE: %^{Deadline}t" :empty-lines 1)
-          ("ts" "Scheduled Task" entry (file+headline "events.org" "Tasks")
-           "* TODO %?\nSCHEDULED: %^{Time}T" :empty-lines 1)
-          ("tS" "Scheduled Task (date only)" entry (file+headline "events.org" "Tasks")
-           "* TODO %?\nSCHEDULED: %^{Date}t" :empty-lines 1)
-          ("e" "Event" entry (file+headline "events.org" "Events")
-           "* %?\n%^T" :empty-lines 1)
-          ("E" "Event (date only)" entry (file+headline "events.org" "Events")
-           "* %?\n$^t" :empty-lines 1)
-          ("p" "Project" entry (file+function "projects.org" ~/org-project-find-heading)
-           "* PROJ %? :project:\n:PROPERTIES:\n:VISIBILITY: folded\n:END:
-:LOGBOOK:\n- Created                              %U\n:END:"
-           :empty-lines 1))))
+This advice overrides ~org-capture-place-template~, the function that:
+
+1. Moves to the location of capture inside the file
+2. Modifies the template to fit its context
+3. Places the template in the file
+
+The advice temporarily sets Org's capture template to an empty string, lets Org do its thing, and then expands the template itself. This does mean that Org no longer performs point 2, but YASnippet is powerful enough that we can simply do that ourselves by modifying the template.
+
+*** Roam Capture
+
+Since Org-roam is currently my primary method of using Org, I only use its templating system. We'll start with defining some useful node accessor functions.
+
+#+begin_src emacs-lisp
+(defun org-roam-node-file-maybe (node &optional dir)
+  "Get file name from NODE, or return a default filename in directory DIR."
+  (unless dir (setq dir org-roam-directory))
+  (or (org-roam-node-file node)
+      (expand-file-name
+       (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
+       dir)))
+
+(defun org-roam-node-file-maybe-dir (node)
+  "Get file name from NODE, or ask for directory and return a default filename."
+  (or (org-roam-node-file node)
+      (expand-file-name
+       (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
+       (read-directory-name "Directory: " org-roam-directory))))
+#+end_src
+
+I want there to only be one capture template when I'm making new links, so that I don't get distracted. However, when I'm explicitly telling Roam to make a new node, it would be a shame if there was only one option. To fix this, I'll add new variables representing the /default/ templates to use in situations where I don't want to have to choose.
+
+#+begin_src emacs-lisp
+
+(defvar org-roam-capture-default-template nil
+  "The default capture template to use when not explicitly capturing.")
+
+(defvar org-roam-dailies-capture-default-template nil
+  "The default daily capture template to use when not explicitly capturing.")
+#+end_src
+
+With those variables created, we can define our templates.
+
+#+begin_src emacs-lisp
+(after! org-roam
+  ;; Default templates
+  (setq org-roam-capture-default-template
+        '("d" "Default" plain ""
+          :target (file+head "${file-maybe-dir}"
+                             "#+title: ${title}")
+          :unnarrowed t
+          :immediate-finish t)
+        org-roam-dailies-capture-default-template
+        '("d" "Default" plain ""
+          :target (file+head "%<%Y-%m-%d>.org"
+                             "#+title: %<%Y-%m-%d>")
+          :unnarrowed t
+          :immediate-finish t))
+  ;; Active templates
+  (setq org-roam-capture-templates
+        '(("f" "Standalone file" plain ""
+           :target (file+head "${file-maybe-dir}"
+                              "#+title: ${title}")
+           :unnarrowed t)
+          ("h" "Heading" entry
+           "* ${title}
+:RELATED:
+Subnote of `(let ((node (org-roam-node-at-point)))
+              (format \"[[id:%s][%s]]\"
+                (org-roam-node-id node)
+                (org-roam-node-title node)))`$1
+:END:\n\n$0"
+           :target (file "20240329114914-a.org")))
+        org-roam-dailies-capture-templates
+        '(("t" "Task" entry "* TODO $1\n\n$0"
+           :target (file+head+olp "%<%Y-%m-%d>.org"
+                                  "#+title: %<%Y-%m-%d>"
+                                  ("Todos"))
+           :empty-lines 1)
+          ("n" "Notes" entry "* $0"
+           :target (file+head+olp "%<%Y-%m-%d>.org"
+                                  "#+title: %<%Y-%m-%d>"
+                                  ("Course Notes :notes:"))
+           :unnarrowed t))))
+#+end_src
+
+Now we just have to advise Org-roam with the proper logic!
+
+#+begin_src emacs-lisp
+(defadvice! ~/org-roam-default-capture (old-fn &rest args)
+  "Use default capture template when not explicitly capturing."
+  :around '(org-roam-node-find org-roam-node-insert)
+  (let ((org-roam-capture-templates (list org-roam-capture-default-template)))
+    (apply old-fn args)))
+
+(defadvice! ~/org-roam-dailies-default-capture (old-fn time &optional goto keys)
+  "Use default capture template when not explicitly capturing."
+  :around #'org-roam-dailies--capture
+  (let ((org-roam-dailies-capture-templates
+         (if goto (list org-roam-dailies-capture-default-template)
+           org-roam-dailies-capture-templates)))
+    (funcall old-fn time goto keys)))
 #+end_src
 
 ** Agenda
