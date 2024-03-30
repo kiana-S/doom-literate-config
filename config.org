@@ -2627,6 +2627,60 @@ It's sometimes nice to be able to click a link in an Org file that takes me to o
 
 While Org-mode provides a very comprehensive set of tools and systems, there are a few small things that are missing or that would make the overall UX smoother. Luckily, Org-mode being implemented as an Emacs package gives us more than enough control over its function to crowbar in a few new features!
 
+*** Archive Restore
+
+Org offers a wonderfully useful trash system called archiving, which lets you move subtrees into a file where they can be saved without permanently deleting them. However, there's no system for automatically restoring these subtrees once they're archived!
+
+Thankfully, Org already stores context data about archived subtrees, so we can use that. First, let's create a function for restoring an archived subtree at point.
+
+#+begin_src emacs-lisp
+(defun org-restore-from-archive ()
+  "Restore an archived subtree to its original file and location.
+
+This function works on any subtree with the ARCHIVE_FILE and optionally
+the ARCHIVE_OLPATH and ARCHIVE_TODO properties, returning the subtree
+to the specified state. It will also remove any other ARCHIVE_* properties.
+
+WARNING: If this subtree had an attachment that was deleted during archive,
+the attachment cannot be restored!"
+  (interactive)
+  (let* ((archived-p
+          (lambda (element)
+            (and (org-element-type-p element 'headline)
+                 (org-element-property :ARCHIVE_FILE element))))
+         (lineage (org-element-lineage (org-element-at-point) nil t))
+         (heading (or (-first archived-p lineage)
+                      (user-error "Archived heading could not be found")))
+         (title (org-element-property :title heading))
+         (file (org-element-property :ARCHIVE_FILE heading))
+         (olp (-some--> (org-element-property :ARCHIVE_OLPATH heading)
+                (s-split "/" it t)))
+         (todo (org-element-property :ARCHIVE_TODO heading))
+         (target (condition-case nil
+                     (org-find-olp (cons file olp))
+                   ((t (error "Invalid outline path %S" olp))))))
+    (goto-char (org-element-begin heading))
+    ;; Restore todo state
+    (when todo (org-todo todo))
+    ;; Delete properties (code hacked from `org-entry-delete')
+    (save-excursion
+      (pcase (org-get-property-block)
+        (`(,begin . ,origin)
+         (let ((end (copy-marker origin))
+               (re (org-re-property "ARCHIVE_[^:]+" t t)))
+           (goto-char begin)
+           (while (re-search-forward re end t)
+             (delete-region (match-beginning 0)
+                            (line-beginning-position 2)))
+           (when (= begin end)
+             (delete-region (line-beginning-position 0)
+                            (line-beginning-position 2)))))))
+    ;; Move back to original location
+    (org-refile nil nil (list "" file nil target))
+    (org-refile-goto-last-stored)
+    (message "Restored \"%s\" to file %s" title file)))
+#+end_src
+
 *** Todo Date Overriding
 
 My attention span being what it is, I often forget to update TODO entries in my Org files until long after the task has been completed. I rely heavily on tracking TODOs through timestamps, so it would be nice to have a command to specify the time to log the task as being completed at. To do this, we can create a new variable ~org-todo-time~ that will override the time when set.
