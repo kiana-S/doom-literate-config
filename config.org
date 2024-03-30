@@ -2763,6 +2763,16 @@ The simple package =org-checklist= from =org-contrib= makes it so that checkboxe
     (add-hook 'org-after-todo-state-change-hook #'org-checklist)))
 #+end_src
 
+The ~org-checklist~ function will reset the checkboxes on any task, but I only want them reset when the task repeats.
+
+#+begin_src emacs-lisp
+(defadvice! ~/org-checklist-only-on-repeating (old-fn)
+  "Only reset checkboxes when marking repeater tasks as DONE."
+  :around #'org-checklist
+  (when (org-get-repeat)
+    (funcall old-fn)))
+#+end_src
+
 I don't want to have to specify the =RESET_CHECK_BOXES= property for every TODO I write, though. I would much prefer if it was on by default, and the system allowed me to turn it off if I wanted to. Luckily, the fine control Org gives you over property inheritance nicely fixes this problem.
 
 #+begin_src emacs-lisp
