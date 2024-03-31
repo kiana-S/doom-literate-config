@@ -2600,12 +2600,21 @@ While this is a complex problem, the solution is actually rather simple: just re
       "<tab>" nil)
 #+end_src
 
-This also means we don't need ~org-cycle~ to emulate indentation, which is nice.
+This also means we don't need ~org-cycle~ to emulate indentation, which is nice. Unfortunately, this breaks something else: ~org-cycle~ not only handles visibility cycling, but also navigating inside tables. This means that we need a little extra binding configuration so that we can make this properly work:
 
 #+begin_src emacs-lisp
-(after! org
-  (setf (nth 4 org-emphasis-regexp-components) 20))
+(let ((item
+       `(menu-item nil org-table-next-field
+         :filter ,(lambda (cmd)
+                    (when (org-table-p)
+                      cmd)))))
+  (map! :after org
+        :map evil-org-mode-map
+        :i "TAB" item
+        :i "<tab>" item))
 #+end_src
+
+This makes it so that we only let tab keypresses fall through if we aren't in a table. (We'll just assume that we aren't going to be expanding any snippets while we're in a table.)
 
 *** Project Links
 
