@@ -1317,7 +1317,7 @@ My favorite color theme has always been Tokyo Night. I use it literally everywhe
 Victor Mono is my preferred coding font. I also use Source Sans Pro as my sans-serif font, though that is more out of obligation than actually liking how it looks.
 
 #+begin_src emacs-lisp
-(setq doom-font (font-spec :family "VictorMono Nerd Font" :size 13)
+(setq doom-font (font-spec :family "VictorMono" :size 13)
       doom-variable-pitch-font (font-spec :family "Source Sans Pro" :size 16))
 #+end_src
 
