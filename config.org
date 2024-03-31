@@ -2676,11 +2676,13 @@ Doom Emacs's =+pretty= flag by default uses the package =org-superstar= to prett
         org-modern-todo nil
         org-modern-horizontal-rule (make-string 36 ?─)
         org-modern-keyword
-        '((t . t)
+        '(("title" . "󰛼")
+          ("subtitle" . "")
           ("author" . "")
           ("email" . "󰇰")
           ("date" . "󰃮")
           ("property" . "")
+          ("filetags" . "󰓼")
           ("bind" . "󰌷")
           ("bibliography" . "")
           ("print_bibliography" . #("" 0 1 (display (raise -0.1))))
@@ -2704,14 +2706,15 @@ Doom Emacs's =+pretty= flag by default uses the package =org-superstar= to prett
           ("attr_latex" . "🄛")
           ("attr_html" . "🄗")
           ("attr_org" . "⒪")
-          ("call" . "󰜎")
+          ("call" . "󰐍")
           ("name" . "󱍶")
           ("header" . "›")
           ("caption" . "󰦨")
-          ("results" . "› result"))
+          ("results" . "› result")
+          (t . "› "))
         org-modern-checkbox
         '((88 . "")
-          (45 . #("–" 0 2 (composition ((2)))))
+          (45 . #("" 0 2 (composition ((2)))))
           (32 . ""))))
 #+end_src
 
@@ -2722,8 +2725,6 @@ The default colors for various elements of =org-modern= don't match with our the
   (set-face-attribute 'org-modern-label nil :height 0.85)
   (custom-set-faces!
     '(org-checkbox :weight normal :inherit org-todo)
-    '(org-modern-statistics
-      :inherit org-checkbox-statistics-todo)
     `(org-modern-tag
       :foreground ,(doom-color 'fg-alt)
       :background ,(doom-color 'base0)
@@ -2735,7 +2736,7 @@ The default colors for various elements of =org-modern= don't match with our the
       :background ,(doom-color 'bg-alt)
       :inherit org-modern-label)
     `(org-modern-date-inactive
-      :foreground ,(doom-color 'comments)
+      :foreground ,(doom-color 'doc-comments)
       :inherit org-modern-date-active)
     `(org-modern-time-active
       :foreground ,(doom-color 'bg-alt)
@@ -3740,7 +3741,7 @@ The Doom module is very outdated, so I'll be overriding it.
         "c" #'idris-ipkg-clean
         "i" #'idris-ipkg-install
         "f" #'idris-ipkg-insert-field))
-    #+end_src
+#+end_src
 
 *** Appearance
 
