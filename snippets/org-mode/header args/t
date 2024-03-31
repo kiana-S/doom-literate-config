@@ -3,4 +3,4 @@
 # name: header arg - tangle
 # condition: (~/yas-org-src-header-p)
 # --
-:tangle $0
+:tangle `(file-relative-name (read-file-name "Tangle to: "))` $0
