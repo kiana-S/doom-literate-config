@@ -26,7 +26,7 @@ Rather than use this space to explain Emacs, I will instead use it to chronicle 
 
 My first brush with Emacs was in around 2019, when I installed it for use with the proof assistant language Agda. I had vaguely heard tales about its beauty and power, but I was nowhere near comfortable enough with config files and programming in general to fully appreciate its capabilities (not to mention that I was using Windows at the time). I bounced off of it pretty quickly because... well, vanilla Emacs is just kinda terrible.
 
-#+caption[Vanilla Emacs]: Look at this and tell me that it doesn't look at least a little awful.
+#+caption: Look at this and tell me that it doesn't look at least a little awful.
 #+name: vanilla-emacs
 [[file:assets/vanilla_emacs.png]]
 
@@ -2835,7 +2835,7 @@ If nil, then use the current time.")
 
 (defadvice! ~/org-override-time (old-fn)
   "Use `org-todo-time' as the current time if it is specified."
-  :around #'org-current-effective-time
+  :around #'org-current-time
   (or org-todo-time (funcall old-fn)))
 #+end_src
 
@@ -3451,8 +3451,8 @@ A full week-long agenda is usually too cluttered for me to read, so I'll narrow 
 
         org-agenda-sorting-strategy
         '((agenda time-up habit-down urgency-down category-up)
-          (todo urgency-down time-up category-up)
-          (tags urgency-down time-up category-up)
+          (todo habit-down urgency-down time-up category-up)
+          (tags habit-down urgency-down time-up category-up)
           (search category-up))
 
         ;; Make sure agenda is the only window
