@@ -92,10 +92,6 @@ It's not the right tool for every codebase, but proper use of literate programmi
 
 My mail client currently requires GPG access to sync emails, which doesn't properly work. Using the mail client requires running ~mbsync -a~ externally instead.
 
-*** Org Mode
-
-A lot of my current Org mode configuration consists of relics of previous organizational systems, including the TODO states and capture templates. I don't currently use these, as most of my Org mode use has shifted towards Org-roam, so it might be a good idea to replace these with something more useful.
-
 * =confpkg=
 
 As part of their literate config, Tecosaur implemented =confpkg=, an embedded Emacs Lisp library that manages multiple aspects of config tangling:
@@ -988,10 +984,9 @@ markdown
 ;;nim
 (nix +tree-sitter)
 ;;ocaml
-(org +pretty +roam2
+(org +roam2 +present
     +gnuplot +jupyter
-    +pandoc +journal
-    +present)
+    +pandoc +journal)
 ;;php
 ;;plantuml
 ;;purescript
@@ -1322,7 +1317,7 @@ My favorite color theme has always been Tokyo Night. I use it literally everywhe
 Victor Mono is my preferred coding font. I also use Source Sans Pro as my sans-serif font, though that is more out of obligation than actually liking how it looks.
 
 #+begin_src emacs-lisp
-(setq doom-font (font-spec :family "VictorMono" :size 13)
+(setq doom-font (font-spec :family "VictorMono Nerd Font" :size 13)
       doom-variable-pitch-font (font-spec :family "Source Sans Pro" :size 16))
 #+end_src
 
@@ -1435,17 +1430,18 @@ Everything else goes in ~config.el~, which is managed by [[*=confpkg=][confpkg]]
 When Company is active, its keybindings overshadow the default ones, meaning keys like =RET= no longer work. To prevent this from happening, let's rebind ~company-complete-selection~ to =TAB= (less useful in the middle of typing), and only allow =RET= to be used if Company has been explicitly interacted with.
 
 #+begin_src emacs-lisp
-(after! company
-  (let ((item `(menu-item nil company-complete-selection
-                :filter ,(lambda (cmd)
-                           (when (company-explicit-action-p)
-                             cmd)))))
-    (map! :map company-active-map
-          "RET" item
-          "<return>" item
-          "TAB" #'company-complete-selection
-          "<tab>" #'company-complete-selection
-          "S-TAB" #'company-complete-common)))
+(let ((item
+       `(menu-item nil company-complete-selection
+         :filter ,(lambda (cmd)
+                    (when (company-explicit-action-p)
+                      cmd)))))
+  (map! :after company
+        :map company-active-map
+        "RET" item
+        "<return>" item
+        "TAB" #'company-complete-selection
+        "<tab>" #'company-complete-selection
+        "S-TAB" #'company-complete-common))
 #+end_src
 
 *** Spell Correction
@@ -2312,8 +2308,6 @@ Emacs Calc is the best calculator I've ever used, and given the fact that it's a
 Typing =C-x *= every time I want to use Calc (very often) is annoying.
 
 #+begin_src emacs-lisp
-
-
 (map! :leader
       :prefix ("#" . "calc")
       :desc "Emacs Calc"
@@ -2529,16 +2523,20 @@ Unfortunately, with that power comes a *lot* of configuration work up-front. It 
 (after! org
   (setq org-archive-location               ; Global archive file
         (concat org-directory ".org_archive::")
+        org-cycle-separator-lines 1        ; Keep 1-line buffer when folded
         org-cycle-emulate-tab nil          ; We don't need this with evil
         org-attach-dir-relative t
         org-log-into-drawer t              ; Write logs into :LOGBOOK:
         org-footnote-auto-label 'confirm   ; Allow editing of footnote names
+
         org-startup-with-inline-images t   ; Do more stuff on startup
         org-startup-with-latex-preview t
         +org-startup-with-animated-gifs t
         org-image-actual-width '(550)      ; Default images to 550px
         org-format-latex-options           ; Make latex preview smaller
         (plist-put org-format-latex-options :scale 0.55)
+        org-indent-indentation-per-level 0 ; No heading indentation
+        org-pretty-entities t              ; UTF-8 formatted latex symbls
 
         ;; Todo Keywords
         org-todo-keywords
@@ -2604,10 +2602,6 @@ While this is a complex problem, the solution is actually rather simple: just re
 
 This also means we don't need ~org-cycle~ to emulate indentation, which is nice.
 
-*** Appearance
-
-When marking text for =*emphasis*=, Org mode normally only allows emphasized sections to span 2 lines. This strikes me as needlessly limited, so let's bump up that number to 20 lines.
-
 #+begin_src emacs-lisp
 (after! org
   (setf (nth 4 org-emphasis-regexp-components) 20))
@@ -2630,6 +2624,145 @@ It's sometimes nice to be able to click a link in an Org file that takes me to o
   (org-link-set-parameters "projectile"
                            :follow #'org-projectile-follow
                            :complete #'org-projectile-completion))
+#+end_src
+
+** Appearance
+
+*** Modern
+
+Doom Emacs's =+pretty= flag by default uses the package =org-superstar= to prettify Org files. This package is decently nice looking, but it has a much nicer and more comprehensive alternative in the form of =org-modern=.
+
+#+begin_src emacs-lisp :tangle packages.el
+(package! org-modern)
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package! org-modern
+  :hook (org-mode . org-modern-mode)
+  :config
+  (setq org-modern-star '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶")
+        org-modern-label-border 0.3
+        org-modern-table-vertical 1
+        org-modern-table-horizontal 0.2
+        org-modern-list '((?- . "•")
+                          (?+ . "•")
+                          (?* . "•"))
+        org-modern-footnote
+        (cons nil (cadr org-script-display))
+        org-modern-todo-faces
+        '(("TODO" :inverse-video t :inherit org-todo)
+          ("PROJ" :inverse-video t :inherit +org-todo-project)
+          ("STRT" :inverse-video t :inherit +org-todo-active)
+          ("WAIT" :inverse-video t :inherit +org-todo-onhold)
+          ("HOLD" :inverse-video t :inherit +org-todo-onhold)
+          ("KILL" :inverse-video t :inherit +org-todo-cancel))
+        org-modern-block-fringe nil
+        org-modern-block-name
+        '((t . t)
+          ("src" "»" "«")
+          ("example" "»–" "–«")
+          ("quote" "❝" "❞")
+          ("export" "⏩" "⏪"))
+        org-modern-priority nil
+        org-modern-todo nil
+        org-modern-horizontal-rule (make-string 36 ?─)
+        org-modern-keyword
+        '((t . t)
+          ("author" . "")
+          ("email" . "󰇰")
+          ("date" . "󰃮")
+          ("property" . "")
+          ("bind" . "󰌷")
+          ("bibliography" . "")
+          ("print_bibliography" . #("" 0 1 (display (raise -0.1))))
+          ("cite_export" . "")
+          ("print_glossary" . #("ᴬᶻ" 0 1 (display (raise -0.1))))
+          ("glossary_sources" . #("" 0 1 (display (raise -0.14))))
+          ("include" . "⇤")
+          ("setupfile" . "⇚")
+          ("html_head" . "🅷")
+          ("html" . "🅗")
+          ("latex_class" . "🄻")
+          ("latex_class_options" . #("🄻" 1 2 (display (raise -0.14))))
+          ("latex_header" . "🅻")
+          ("latex_header_extra" . "🅻⁺")
+          ("latex" . "🅛")
+          ("beamer_theme" . "🄱")
+          ("beamer_color_theme" . #("🄱" 1 2 (display (raise -0.12))))
+          ("beamer_font_theme" . "🄱𝐀")
+          ("beamer_header" . "🅱")
+          ("beamer" . "🅑")
+          ("attr_latex" . "🄛")
+          ("attr_html" . "🄗")
+          ("attr_org" . "⒪")
+          ("call" . "󰜎")
+          ("name" . "󱍶")
+          ("header" . "›")
+          ("caption" . "󰦨")
+          ("results" . "› result"))
+        org-modern-checkbox
+        '((88 . "")
+          (45 . #("–" 0 2 (composition ((2)))))
+          (32 . ""))))
+#+end_src
+
+The default colors for various elements of =org-modern= don't match with our theme colors, so we need to modify them ourselves. We'll also modify a few aspects of label appearance here.
+
+#+begin_src emacs-lisp
+(after! org-modern
+  (set-face-attribute 'org-modern-label nil :height 0.85)
+  (custom-set-faces!
+    '(org-checkbox :weight normal :inherit org-todo)
+    '(org-modern-statistics
+      :inherit org-checkbox-statistics-todo)
+    `(org-modern-tag
+      :foreground ,(doom-color 'fg-alt)
+      :background ,(doom-color 'base0)
+      :inherit (secondary-selection org-modern-label))
+    `(org-modern-horizontal-rule
+      :strike-through ,(doom-color 'grey) :inherit org-hide)
+    `(org-modern-done
+      :foreground ,(doom-color 'fg-alt)
+      :background ,(doom-color 'bg-alt)
+      :inherit org-modern-label)
+    `(org-modern-date-inactive
+      :foreground ,(doom-color 'comments)
+      :inherit org-modern-date-active)
+    `(org-modern-time-active
+      :foreground ,(doom-color 'bg-alt)
+      :background ,(doom-color 'base5)
+      :inherit org-modern-label)
+    `(org-modern-time-inactive
+      :foreground ,(doom-color 'bg)
+      :background ,(doom-color 'base2)
+      :inherit org-modern-time-active)))
+#+end_src
+
+*** Appear
+
+Since we've disabled =+pretty=, we need to add the packages we do want from it, namely =org-appear= to automatically handle emphasis markers and other nice things like that.
+
+#+begin_src emacs-lisp :tangle packages.el
+(package! org-appear)
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package! org-appear
+  :hook (org-mode . org-appear-mode)
+  :config
+  (setq org-appear-autoentities t))
+
+(after! org
+  (setq org-highlight-latex-and-related '(native script entities)))
+#+end_src
+
+*** Emphasis
+
+When marking text for =*emphasis*=, Org mode normally only allows emphasized sections to span 2 lines. This strikes me as needlessly limited, so let's bump up that number to 20 lines.
+
+#+begin_src emacs-lisp
+(after! org
+  (setf (nth 4 org-emphasis-regexp-components) 20))
 #+end_src
 
 ** Enhancements
