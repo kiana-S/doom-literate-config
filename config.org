@@ -88,7 +88,11 @@ It's not the right tool for every codebase, but proper use of literate programmi
 
 ** Current Issues
 
-*** Mail
+*** TODO Idris
+
+The configuration for Idris is a bit light, and could use some touching up.
+
+*** TODO Mail
 
 My mail client currently requires GPG access to sync emails, which doesn't properly work. Using the mail client requires running ~mbsync -a~ externally instead.
 
@@ -1423,8 +1427,6 @@ Everything else goes in ~config.el~, which is managed by [[*=confpkg=][confpkg]]
 
 #+call: confpkg("Pkg: company")
 
-*** TODO Optimization
-
 *** Bindings
 
 When Company is active, its keybindings overshadow the default ones, meaning keys like =RET= no longer work. To prevent this from happening, let's rebind ~company-complete-selection~ to =TAB= (less useful in the middle of typing), and only allow =RET= to be used if Company has been explicitly interacted with.
@@ -2461,7 +2463,7 @@ Emacs Everywhere is a great idea. Unfortunately, the default package on MELPA us
      :geometry window-dims)))
 #+end_src
 
-** TODO Mail
+** Mail
 
 #+call: confpkg()
 
@@ -3278,7 +3280,9 @@ Areas are stored as subnodes of the =Areas= file node, and likewise for goals. T
             response)))
 #+end_src
 
-*** TODO Bindings
+*** Bindings
+
+Here's a handful of bindings that streamline common operations I use:
 
 #+begin_src emacs-lisp
 (map! :mode org-mode
@@ -3678,7 +3682,7 @@ Operators being in italics looks ugly, so let's fix that.
   (custom-set-faces! '(haskell-operator-face :slant normal)))
 #+end_src
 
-** TODO Idris
+** Idris
 :PROPERTIES:
 :header-args:emacs-lisp: :noweb-ref idris-config
 :END:
