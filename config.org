@@ -2523,25 +2523,30 @@ Unfortunately, with that power comes a *lot* of configuration work up-front. It 
 ** Basic Configuration
 
 #+begin_src emacs-lisp
+;; Org Directory - location of main org repo
 (setq org-directory "~/org/")
 
 (after! org
   (setq org-archive-location               ; Global archive file
         (concat org-directory ".org_archive::")
-        org-cycle-separator-lines 1        ; Keep 1-line buffer when folded
         org-cycle-emulate-tab nil          ; We don't need this with evil
         org-attach-dir-relative t
         org-log-into-drawer t              ; Write logs into :LOGBOOK:
         org-footnote-auto-label 'confirm   ; Allow editing of footnote names
 
+        ;; Startup
         org-startup-with-inline-images t   ; Do more stuff on startup
         org-startup-with-latex-preview t
         +org-startup-with-animated-gifs t
+
+        ;; Customize appearance
+        org-indent-indentation-per-level 0 ; No heading indentation
+        org-cycle-separator-lines 1        ; Keep 1-line padding between folded headings
+        org-hide-emphasis-markers t        ; Hide *emphasis*
+        org-pretty-entities t              ; UTF-8 formatted latex symbls
         org-image-actual-width '(550)      ; Default images to 550px
         org-format-latex-options           ; Make latex preview smaller
         (plist-put org-format-latex-options :scale 0.55)
-        org-indent-indentation-per-level 0 ; No heading indentation
-        org-pretty-entities t              ; UTF-8 formatted latex symbls
 
         ;; Todo Keywords
         org-todo-keywords
@@ -2559,14 +2564,7 @@ Unfortunately, with that power comes a *lot* of configuration work up-front. It 
           ("WAIT" . +org-todo-onhold)
           ("HOLD" . +org-todo-onhold)
           ("KILL" . +org-todo-cancel))
-
-        ;; Customize appearance
-        org-hide-emphasis-markers t
-        org-hide-leading-stars nil
-        org-superstar-item-bullet-alist
-        '((?* . 8226)
-          (?+ . 8226)
-          (?- . 8226))))
+        ))
 #+end_src
 
 *** Bindings
