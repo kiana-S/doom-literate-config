@@ -3,5 +3,5 @@
 # name: elisp src
 # --
 #+begin_src emacs-lisp $1
-`%`$0
+$0
 #+end_src
