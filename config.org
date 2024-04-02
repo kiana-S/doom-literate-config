@@ -2665,6 +2665,7 @@ Doom Emacs's =+pretty= flag by default uses the package =org-superstar= to prett
                           (?* . "•"))
         org-modern-footnote
         (cons nil (cadr org-script-display))
+        org-modern-todo nil
         org-modern-todo-faces
         '(("TODO" :inverse-video t :inherit org-todo)
           ("PROJ" :inverse-video t :inherit +org-todo-project)
@@ -2680,7 +2681,6 @@ Doom Emacs's =+pretty= flag by default uses the package =org-superstar= to prett
           ("quote" "❝" "❞")
           ("export" "⏩" "⏪"))
         org-modern-priority nil
-        org-modern-todo nil
         org-modern-horizontal-rule (make-string 36 ?─)
         org-modern-keyword
         '(("title" . "󰛼")
@@ -2688,7 +2688,7 @@ Doom Emacs's =+pretty= flag by default uses the package =org-superstar= to prett
           ("author" . "")
           ("email" . "󰇰")
           ("date" . "󰃮")
-          ("property" . "")
+          ("property" . "󰆧")
           ("filetags" . "󰓼")
           ("bind" . "󰌷")
           ("bibliography" . "")
@@ -2740,18 +2740,23 @@ The default colors for various elements of =org-modern= don't match with our the
       :strike-through ,(doom-color 'grey) :inherit org-hide)
     `(org-modern-done
       :foreground ,(doom-color 'fg-alt)
-      :background ,(doom-color 'bg-alt)
+      :background ,(doom-color 'modeline-bg)
       :inherit org-modern-label)
+    `(org-modern-date-active
+      :height 1.1
+      :foreground ,(doom-color 'brown)
+      :inherit org-modern-done)
     `(org-modern-date-inactive
       :foreground ,(doom-color 'doc-comments)
       :inherit org-modern-date-active)
     `(org-modern-time-active
-      :foreground ,(doom-color 'bg-alt)
-      :background ,(doom-color 'base5)
+      :height 1.1
+      :foreground ,(doom-color 'fg-alt)
+      :background ,(doom-color 'base0)
       :inherit org-modern-label)
     `(org-modern-time-inactive
-      :foreground ,(doom-color 'bg)
-      :background ,(doom-color 'base2)
+      :foreground ,(doom-color 'grey)
+      :background ,(doom-color 'modeline-bg-l)
       :inherit org-modern-time-active)))
 #+end_src
 
