@@ -2057,8 +2057,6 @@ I use GPG signing for commits, which means that committing often takes longer th
 
 *** Magit Syntax Highlighting
 
-#+call: confpkg("Magit Delta")
-
 Magit already looks great, but it could use some proper syntax highlighting!
 
 #+begin_src emacs-lisp :tangle packages.el
