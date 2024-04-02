@@ -214,7 +214,10 @@ If you're reading the raw org file instead of the published version, the code fo
       (insert-file-contents buffer-file-name)
       (goto-char (point-min))
       (re-search-forward "^;;; Code:\n")
-      (let (prepared)
+      (let ((comment-start ";")
+            (comment-padding "   ")
+            (comment-end "")
+            statements)
         (while (re-search-forward "(\\(package!\\|unpin!\\)" nil t)
           (let* ((start (copy-marker (match-beginning 0)))
                  (end (progn (goto-char start)
@@ -222,27 +225,29 @@ If you're reading the raw org file instead of the published version, the code fo
                              (if (looking-at "[\t ]*;.*")
                                  (line-end-position)
                                (point))))
-                 (contents (buffer-substring start end))
-                 paste-start paste-end
-                 (comment-start ";")
-                 (comment-padding "   ")
-                 (comment-end ""))
+                 (contents (buffer-substring start end)))
             (plist-put confpkg :package-statements
                        (nconc (plist-get confpkg :package-statements)
                               (list contents)))
             (delete-region start (1+ end))
             (re-search-backward "^;;; Code:")
             (beginning-of-line)
-            (unless prepared
-              (insert ";;  Package statement:\n")
-              (setq prepared t))
-            (setq paste-start (point))
+            (unless statements
+              (insert ";;  Package statements:\n")
+              (setq statements t))
             (insert contents)
-            (setq paste-end (point))
-            (comment-region paste-start paste-end 2)
+            (unless (string-suffix-p "\n" contents)
+              (insert "\n"))
             (goto-char start)))
-        (when prepared
+        (when statements
           (re-search-backward "^;;; Code:")
+          (comment-region
+           (save-excursion
+             (re-search-backward "^;;  Package statements:")
+             (forward-line)
+             (point))
+           (point)
+           2)
           (insert ";;\n")))
       (when (buffer-modified-p)
         (write-region nil nil buffer-file-name)
