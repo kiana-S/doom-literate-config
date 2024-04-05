@@ -2563,6 +2563,59 @@ Unfortunately, with that power comes a *lot* of configuration work up-front. It 
         ))
 #+end_src
 
+*** Tags
+
+Org mode offers a useful tag hierarchy system, configured via ~org-tag-alist~. We'll be using ~org-tag-persistent-alist~ instead so that our tag hierarchy can't be overwritten.
+
+#+begin_src emacs-lisp
+(defvar subject-alist '()
+  "An alist where the car is the name of a class subject (typically
+four capitalized letters), and the cdr is a list of sub-tags.")
+
+(defvar classes-mwf '()
+  "Classes that belong under the :MWF: tag.")
+(defvar classes-tr '()
+  "Classes that belong under the :TR: tag.")
+(defvar classes-online '()
+  "Classes that belong under the :Online: tag.")
+
+(after! org
+  (setq classes-mwf    '(("HIST1111" . ?1))
+        classes-tr     '(("MATH2203" . ?2))
+        classes-online '(("HIST2111" . ?3))
+        subjects '(("MATH" ("calculus") ("algebra"))
+                   ("HIST")
+                   ("POLS")
+                   ("ECON")))
+
+  (setq org-tag-persistent-alist
+        `(("area" . ?A) ("goal" . ?G) ("project" . ?P) ("meta" . ?M)
+
+          (:startgrouptag) ("college")
+          (:grouptags) ("assign") ("notes") (:endgrouptag)
+
+          ,@(mapcan
+             (lambda (subject)
+               `((:startgrouptag) (,(car subject))
+                 (:grouptags)
+                 (,(format "{%s[[:digit:]]+}" (car subject)))
+                 ,@(cdr subject)
+                 (:endgrouptag)))
+             subjects)
+
+          (:startgroup) ("college")
+          (:grouptags) ("TR") ("MWF") ("Online") (:endgroup)
+
+          (:startgroup) ("MWF")
+          (:grouptags) ,@classes-mwf (:endgroup)
+
+          (:startgroup) ("TR")
+          (:grouptags) ,@classes-tr (:endgroup)
+
+          (:startgroup) ("Online")
+          (:grouptags) ,@classes-online (:endgroup))))
+#+end_src
+
 *** Bindings
 
 **** Convenience
@@ -3204,48 +3257,6 @@ To fix this issue, it is thankfully rather simple to patch Org-mode's category s
 #+end_src
 
 [fn:2] Where by "simple" I mean that it took me multiple hours of combing through Org's source code in order to find the multiple places(???) where this behavior was implemented and to figure out how to modify it. At least the final code is short!
-
-** Tags
-
-Org mode offers a useful tag hierarchy system, configured via ~org-tag-alist~. We'll be using ~org-tag-persistent-alist~ instead so that our tag hierarchy can't be overwritten.
-
-#+begin_src emacs-lisp
-(defvar classes-mwf '()
-  "Classes that belong under the :MWF: tag.")
-(defvar classes-tr '()
-  "Classes that belong under the :TR: tag.")
-(defvar classes-online '()
-  "Classes that belong under the :Online: tag.")
-
-(after! org
-  (setq classes-mwf    '(("HIST1111" . ?1))
-        classes-tr     '(("MATH2203" . ?2))
-        classes-online '(("HIST2111" . ?3)))
-
-  (setq org-tag-persistent-alist
-        `(("area" . ?A) ("goal" . ?G) ("project" . ?P) ("meta" . ?M)
-
-          ;; Topics
-          (:startgrouptag) ("college")
-          (:grouptags) ("assign") ("notes") (:endgrouptag)
-
-          ("economics") ("polsci") ("math") ("history")
-          (:startgrouptag) ("math")
-          (:grouptags) ("calculus") ("algebra") (:endgrouptag)
-
-          ;; Classes
-          (:startgroup) ("college")
-          (:grouptags) ("TR") ("MWF") ("Online") (:endgroup)
-
-          (:startgroup) ("MWF")
-          (:grouptags) ,@classes-mwf (:endgroup)
-
-          (:startgroup) ("TR")
-          (:grouptags) ,@classes-tr (:endgroup)
-
-          (:startgroup) ("Online")
-          (:grouptags) ,@classes-online (:endgroup))))
-#+end_src
 
 ** Org Roam
 
