@@ -4,7 +4,7 @@
 # name: Snippet template
 # --
 # -*- mode: snippet -*-
-${1:# contributor: `user-full-name`
+${1:# contributor: `user-full-name` <`user-mail-address`>
 }# key: ${2:`(file-name-base)`}${3:
 # name: $4}
 # --
