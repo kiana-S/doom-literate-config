@@ -2583,10 +2583,10 @@ four capitalized letters), and the cdr is a list of sub-tags.")
   (setq classes-mwf    '(("HIST1111" . ?1))
         classes-tr     '(("MATH2203" . ?2))
         classes-online '(("HIST2111" . ?3))
-        subjects '(("MATH" ("calculus") ("algebra"))
-                   ("HIST")
-                   ("POLS")
-                   ("ECON")))
+        subject-alist  '(("MATH" ("calculus") ("algebra"))
+                         ("HIST")
+                         ("POLS")
+                         ("ECON")))
 
   (setq org-tag-persistent-alist
         `(("area" . ?A) ("goal" . ?G) ("project" . ?P) ("meta" . ?M)
@@ -2594,14 +2594,14 @@ four capitalized letters), and the cdr is a list of sub-tags.")
           (:startgrouptag) ("college")
           (:grouptags) ("assign") ("notes") (:endgrouptag)
 
-          ,@(mapcan
+          ,@(-mapcat
              (lambda (subject)
                `((:startgrouptag) (,(car subject))
                  (:grouptags)
                  (,(format "{%s[[:digit:]]+}" (car subject)))
                  ,@(cdr subject)
                  (:endgrouptag)))
-             subjects)
+             subject-alist)
 
           (:startgroup) ("college")
           (:grouptags) ("TR") ("MWF") ("Online") (:endgroup)
