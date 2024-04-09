@@ -4,13 +4,13 @@
 #+property: header-args:elisp :results replace :exports code
 #+property: header-args :tangle no :results silent :eval no-export :mkdirp yes
 
-* Introduction
-
 #+begin_quote
 Emacs outshines all other editing software in approximately the same way that the noonday sun does the stars. It is not just bigger and brighter; it simply makes everything else vanish.
 
   -- Neil Stephenson, /In the Beginning was the Command Line/ (1998)
 #+end_quote
+
+* Introduction
 
 *Hello!*
 
@@ -96,7 +96,11 @@ The configuration for Idris is a bit light, and could use some touching up.
 
 My mail client currently requires GPG access to sync emails, which doesn't properly work. Using the mail client requires running ~mbsync -a~ externally instead.
 
-* =confpkg=
+*** Org
+
+**** TODO Configure Org popups
+
+* Config Management with =confpkg=
 
 As part of their literate config, Tecosaur implemented =confpkg=, an embedded Emacs Lisp library that manages multiple aspects of config tangling:
 
@@ -1077,7 +1081,7 @@ I don't want my cache files to get deleted whenever I mess up my Doom install, s
 
 *** Windows & Workspaces
 
-I like using window numbers to navigate between splitscreen windows, but having to type =SPC w <#>= every time is annoying. Let's shorten that key sequence by 67%, and also throw in a convenient binding for switching to =treemacs=.
+I like using window numbers to navigate between splitscreen windows, but having to type =SPC w <#>= every time is annoying. Let's shorten that key sequence by 33%, and also throw in a convenient binding for switching to =treemacs=.
 
 #+begin_src emacs-lisp
 (map! :leader
@@ -1201,57 +1205,6 @@ I'm not even going to bother explaining this one. Emacs is just janky sometimes 
       (run-hooks 'projectile-find-file-hook))))
 #+end_src
 
-** Line Wrapping
-
-#+call: confpkg("Line Wrapping")
-
-I have rather specific tastes when it comes to line wrapping. I like soft line wrapping (~visual-line-mode~), but I want it to be as seamless as possible.
-
-#+begin_src emacs-lisp
-(setq +word-wrap-fill-style 'soft      ; Soft line wrapping
-      evil-respect-visual-line-mode t  ; Respect visual line mode
-      )
-(setq-default fill-column 90)      ; More space before wrap
-#+end_src
-
-*** Hacks
-
-**** Evil
-
-For some reason, telling Evil to respect soft line wrapping doesn't change the behavior of =j= and =k=, so I'll do that myself.
-
-#+begin_src emacs-lisp
-(after! evil
-  (evil-define-motion evil-next-line (count)
-    "Move the cursor COUNT lines down."
-    :type line
-    (let ((line-move-visual evil-respect-visual-line-mode))
-      (evil-line-move (or count 1))))
-  (evil-define-motion evil-previous-line (count)
-    "Move the cursor COUNT lines up."
-    :type line
-    (let ((line-move-visual evil-respect-visual-line-mode))
-      (evil-line-move (- (or count 1))))))
-#+end_src
-
-**** Modeline
-
-The =visual-fill-column= package works by expanding the window's right margin. This causes the right edge of the modeline to follow the margin as well, which looks a bit strange. As a hacky fix, I've found that configuring the the modeline to align itself to the right fringe instead of the right window edge seems to fix the issue.
-
-#+begin_src emacs-lisp
-(setq mode-line-right-align-edge 'right-fringe)
-#+end_src
-
-**** Line Numbers
-
-When a buffer has line numbers, they can interfere with the margins and make the line smaller than it should be. We can mitigate this issue by adding extra columns to the window.
-
-#+begin_src emacs-lisp
-(add-hook! display-line-numbers-mode
-  (setq-local visual-fill-column-extra-text-width '(0 . 6))
-  (visual-fill-column--adjust-window))
-#+end_src
-
 ** Automated Nix Builds
 
 #+call: confpkg("Nix")
@@ -1323,14 +1276,14 @@ My favorite color theme has always been Tokyo Night. I use it literally everywhe
 
 ** Fonts
 
-Victor Mono is my preferred coding font. I also use Source Sans Pro as my sans-serif font, though that is more out of obligation than actually liking how it looks.
+Victor Mono is my preferred coding font. I also use Source Sans Pro as my sans-serif font, though that is more an arbitrary pick than actually liking how it looks.
 
 #+begin_src emacs-lisp
 (setq doom-font (font-spec :family "VictorMono" :size 13)
       doom-variable-pitch-font (font-spec :family "Source Sans Pro" :size 16))
 #+end_src
 
-I'm a very big fan of how italics look in this font, so let's make more things italicized! While we're here, we'll also set doom's modified buffer font to be red instead of yellow (I like how it looks better).
+I'm a very big fan of how italics look in Victor Mono, so let's make more things italicized! While we're here, we'll also set doom's modified buffer font to be red instead of yellow (I like how it looks better).
 
 #+begin_src emacs-lisp
 (custom-set-faces!
@@ -1345,6 +1298,57 @@ Some other small aesthetic changes:
 (setq nerd-icons-scale-factor 1.1     ; Make icons slightly larger
       doom-modeline-height 24         ; Make Doom's modeline taller
       display-line-numbers-type t)    ; Line numbers (absolute)
+#+end_src
+
+** Line Wrapping
+
+#+call: confpkg("Line Wrapping")
+
+I have rather specific tastes when it comes to line wrapping. I like soft line wrapping (~visual-line-mode~), but I want it to be as seamless as possible.
+
+#+begin_src emacs-lisp
+(setq +word-wrap-fill-style 'soft      ; Soft line wrapping
+      evil-respect-visual-line-mode t  ; Respect visual line mode
+      )
+(setq-default fill-column 90)      ; More space before wrap
+#+end_src
+
+*** Hacks
+
+**** Evil
+
+For some reason, telling Evil to respect soft line wrapping doesn't change the behavior of =j= and =k=, so I'll do that myself.
+
+#+begin_src emacs-lisp
+(after! evil
+  (evil-define-motion evil-next-line (count)
+    "Move the cursor COUNT lines down."
+    :type line
+    (let ((line-move-visual evil-respect-visual-line-mode))
+      (evil-line-move (or count 1))))
+  (evil-define-motion evil-previous-line (count)
+    "Move the cursor COUNT lines up."
+    :type line
+    (let ((line-move-visual evil-respect-visual-line-mode))
+      (evil-line-move (- (or count 1))))))
+#+end_src
+
+**** Modeline
+
+The =visual-fill-column= package works by expanding the window's right margin. This causes the right edge of the modeline to follow the margin as well, which looks a bit strange. As a hacky fix, I've found that configuring the the modeline to align itself to the right fringe instead of the right window edge seems to fix the issue.
+
+#+begin_src emacs-lisp
+(setq mode-line-right-align-edge 'right-fringe)
+#+end_src
+
+**** Line Numbers
+
+When a buffer has line numbers, they can interfere with the margins and make the line smaller than it should be. We can mitigate this issue by adding extra columns to the window.
+
+#+begin_src emacs-lisp
+(add-hook! display-line-numbers-mode
+  (setq-local visual-fill-column-extra-text-width '(0 . 6))
+  (visual-fill-column--adjust-window))
 #+end_src
 
 ** Dashboard
