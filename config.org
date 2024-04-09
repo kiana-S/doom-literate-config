@@ -3305,6 +3305,15 @@ Here's a handful of bindings that streamline common operations I use:
       "m R" #'org-roam-extract-subtree)
 #+end_src
 
+*** Roam File Names
+
+By default, Roam generates file names containing both a timestamp and the node title. This makes it annoying if I want to change the title of that node later, so I'll change it to just the timestamp.
+
+#+begin_src emacs-lisp
+(after! org-roam
+  (setq org-roam-extract-new-file-path "%<%Y-%m-%d_%H-%M-%S>.org"))
+#+end_src
+
 *** Roam Buffer
 
 The unlinked references section is turned off by default for performance reasons, but I've never had any serious issues with it. Let's turn that on, and also make sure backlinks are unique.
@@ -3377,14 +3386,14 @@ Since Org-roam is currently my primary method of using Org, I only use its templ
   (unless dir (setq dir org-roam-directory))
   (or (org-roam-node-file node)
       (expand-file-name
-       (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
+       (concat "%<%Y-%m-%d_%H-%M-%S>.org")
        dir)))
 
 (defun org-roam-node-file-maybe-dir (node)
   "Get file name from NODE, or ask for directory and return a default filename."
   (or (org-roam-node-file node)
       (expand-file-name
-       (concat "%<%Y%m%d%H%M%S>-" (org-roam-node-slug node) ".org")
+       (concat "%<%Y-%m-%d_%H-%M-%S>.org")
        (read-directory-name "Directory: " org-roam-directory))))
 #+end_src
 
