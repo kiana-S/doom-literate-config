@@ -2539,7 +2539,6 @@ Unfortunately, with that power comes a *lot* of configuration work up-front. It 
         org-indent-indentation-per-level 0 ; No heading indentation
         org-cycle-separator-lines 1        ; Keep 1-line padding between folded headings
         org-hide-emphasis-markers t        ; Hide *emphasis*
-        org-pretty-entities t              ; UTF-8 formatted latex symbls
         org-image-actual-width '(550)      ; Default images to 550px
         org-format-latex-options           ; Make latex preview smaller
         (plist-put org-format-latex-options :scale 0.55)
@@ -2784,25 +2783,27 @@ The default colors for various elements of =org-modern= don't match with our the
     `(org-modern-horizontal-rule
       :strike-through ,(doom-color 'grey) :inherit org-hide)
     `(org-modern-done
+      :height 1.1
       :foreground ,(doom-color 'fg-alt)
       :background ,(doom-color 'modeline-bg)
       :inherit org-modern-label)
     `(org-modern-date-active
-      :height 1.1
       :foreground ,(doom-color 'brown)
       :inherit org-modern-done)
     `(org-modern-date-inactive
       :foreground ,(doom-color 'doc-comments)
       :inherit org-modern-date-active)
     `(org-modern-time-active
-      :height 1.1
       :foreground ,(doom-color 'fg-alt)
       :background ,(doom-color 'base0)
-      :inherit org-modern-label)
+      :inherit org-modern-done)
     `(org-modern-time-inactive
       :foreground ,(doom-color 'grey)
       :background ,(doom-color 'modeline-bg-l)
-      :inherit org-modern-time-active)))
+      :inherit org-modern-time-active)
+    `(org-modern-statistics
+      :foreground ,(doom-color 'yellow)
+      :inherit org-checkbox-statistics-todo)))
 #+end_src
 
 *** Appear
@@ -2817,7 +2818,8 @@ Since we've disabled =+pretty=, we need to add the packages we do want from it, 
 (use-package! org-appear
   :hook (org-mode . org-appear-mode)
   :config
-  (setq org-appear-autoentities t))
+  (setq org-appear-autoentities t
+        org-appear-inside-latex t))
 
 (after! org
   (setq org-highlight-latex-and-related '(native script entities)))
