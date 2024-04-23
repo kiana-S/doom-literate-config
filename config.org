@@ -1283,13 +1283,16 @@ Victor Mono is my preferred coding font. I also use Source Sans Pro as my sans-s
       doom-variable-pitch-font (font-spec :family "Source Sans Pro" :size 16))
 #+end_src
 
-I'm a very big fan of how italics look in Victor Mono, so let's make more things italicized! While we're here, we'll also set doom's modified buffer font to be red instead of yellow (I like how it looks better).
+I'm a very big fan of how italics look in Victor Mono, so let's make more things italicized! While we're here, we'll also set doom's modified buffer font to be orange instead of yellow (I like how it looks better).
 
 #+begin_src emacs-lisp
 (custom-set-faces!
   '(font-lock-comment-face :slant italic)
   '(font-lock-variable-name-face :slant italic)
-  '(doom-modeline-buffer-modified :weight bold :inherit (doom-modeline error)))
+  `(doom-modeline-buffer-modified
+    :foreground ,(doom-color 'orange)
+    :weight bold
+    :inherit doom-modeline))
 #+end_src
 
 Some other small aesthetic changes:
