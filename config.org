@@ -3742,17 +3742,18 @@ Since Org-roam is currently my primary method of using Org, I only use its templ
 #+begin_src emacs-lisp
 (defun org-roam-node-file-maybe (node &optional dir)
   "Get file name from NODE, or return a default filename in directory DIR."
-  (unless dir (setq dir org-roam-directory))
+  (setq dir (expand-file-name (or dir "") org-roam-directory))
   (or (org-roam-node-file node)
-      (expand-file-name
-       (concat "%<%Y-%m-%d_%H-%M-%S>.org")
-       dir)))
+      (expand-file-name "%<%Y-%m-%d_%H-%M-%S>.org" dir)))
+
+(defun org-roam-node-file-maybe-cite (node)
+  (org-roam-node-file-maybe node "cite"))
 
 (defun org-roam-node-file-maybe-dir (node)
   "Get file name from NODE, or ask for directory and return a default filename."
   (or (org-roam-node-file node)
       (expand-file-name
-       (concat "%<%Y-%m-%d_%H-%M-%S>.org")
+       "%<%Y-%m-%d_%H-%M-%S>.org"
        (read-directory-name "Directory: " org-roam-directory))))
 #+end_src
 
@@ -3789,6 +3790,11 @@ With those variables created, we can define our templates.
         '(("f" "Standalone file" plain ""
            :target (file+head "${file-maybe-dir}"
                               "#+title: ${title}")
+           :unnarrowed t)
+          ("n" "Citation Note" plain ""
+           :target (file+head "${file-maybe-cite}"
+                              "#+title: ${note-title}")
+           :immediate-finish t
            :unnarrowed t)
           ("h" "Heading" entry
            "`(make-string (org-outline-level) ?*)`* ${title}
@@ -3973,19 +3979,44 @@ Let's start with some configuration. I use [[https://www.zotero.org/][Zotero]] t
 #+begin_src emacs-lisp
 (after! org
   (setq org-cite-csl-styles-dir "~/Zotero/styles"
-        org-cite-csl--fallback-style-file "/home/kiana/Zotero/styles/modern-language-styles.csl"
-        org-cite-global-bibliography (list (expand-file-name "library.json" org-directory))
+        ;; MLA style by default
+        org-cite-csl--fallback-style-file
+        "/home/kiana/Zotero/styles/modern-language-association.csl"
+        org-cite-global-bibliography
+        (list (expand-file-name "library.json" org-directory))
         citar-bibliography org-cite-global-bibliography))
 #+end_src
 
-And we should also make it look a little prettier:
+*** Citation Settings
+
+I primarily use the CSL export processor to create MLA-style citation, so let's configure that to make its citations more standard.
+
+#+begin_src emacs-lisp
+(after! org
+  (setq org-cite-csl-link-cites nil ; This is not recommended by MLA
+        ))
+#+end_src
+
+*** Roam Citation Notes
+
+We can use the package =citar-org-roam= (bundled with Doom module =:tools biblio=) to create citation notes in Roam.
+
+#+begin_src emacs-lisp
+(after! citar-org-roam
+  (setq citar-org-roam-subdir "cite"
+        citar-org-roam-capture-template-key "n"))
+#+end_src
+
+*** Aesthetics
+
+We should also make Org citations look a little prettier:
 
 #+begin_src emacs-lisp
 ;; Make faces conform to theme
 (after! org
   (custom-set-faces!
     `(org-cite :foreground ,(doom-color 'green))
-    `(org-cite-key :slant italic :foreground ,(doom-color 'green))))
+    '(org-cite-key :foreground nil :slant italic :underline t :inherit org-cite)))
 
 ;; Citar icons
 (after! citar
