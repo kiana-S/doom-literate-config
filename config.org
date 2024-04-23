@@ -789,7 +789,7 @@ One of Doom Emacs's most useful features is its modular configuration system, al
 
 ** Config Modules
 
-Considering this is a literate config, the corresponding ~:config literate~ module is necessary. We'll also turn on some of the default config options too.
+Since this is a literate config, the corresponding ~:config literate~ module is necessary. We'll also turn on some of the default config options too.
 
 #+name: doom-config
 #+begin_src emacs-lisp
@@ -2251,7 +2251,7 @@ Treemacs is a really useful package, but it also has a lot of defaults I don't l
 
   (treemacs-hide-gitignored-files-mode) ; Hide git-ignored files by default
   (treemacs-fringe-indicator-mode -1)   ; No fringe indicator
-  (treemacs-resize-icons 16)            ; Make icons smaller
+  (treemacs-resize-icons 12)            ; Make icons smaller
   )
 #+end_src
 
@@ -2375,14 +2375,14 @@ what type of visual state is currently active."
 
 *** Evil Bindings
 
-I want to have vim keybindings in Calc, so let's enable the =evil-collection= module for it. I haven't found a better way to do this than to edit the relevant variable in ~init.el~:
+I want to have vim keybindings in Calc, so let's enable the =evil-collection= module for it by removing it from ~+evil-collection-disabled-list~.
 
 #+begin_src emacs-lisp
 ;; Enable evil-collection-calc
 (delq 'calc +evil-collection-disabled-list)
 #+end_src
 
-Let's also rebind some keys. Preserving evil's =[= and =]= bindings doesn't make sense to me, and =C-r= makes more sense as a redo binding than =D D=.
+Let's also rebind some keys. We'll set =[= and =]= to directly begin and end vectors like it did originally, and =C-r= makes more sense as a redo binding than =D D=.
 
 #+begin_src emacs-lisp
 (defadvice! ~/evil-collection-calc-bindings ()
@@ -3328,8 +3328,7 @@ To fix this, we'll need some liberal use of override advising.
                        (switch-to-buffer-other-window " *Org tags*")
                        (org-fit-window-to-buffer)))
                     ;; Quit.
-                    ((or ?\C-g
-                         (and ?q (guard (not (rassoc input-char tag-table-local)))))
+                    ((or ?\C-g ?q)
                      (delete-overlay org-tags-overlay)
                      ;; Quit as C-g does.
                      (keyboard-quit))
@@ -3738,7 +3737,7 @@ This advice overrides ~org-capture-place-template~, the function that:
 2. Modifies the template to fit its context
 3. Places the template in the file
 
-The advice temporarily sets Org's capture template to an empty string, lets Org do its thing, and then expands the template itself. This does mean that Org no longer performs point 2, but YASnippet is powerful enough that we can simply do that ourselves by modifying the template.
+The advice temporarily sets Org's capture template to an empty string, lets Org do its thing, and then expands the template itself. This does mean that Org no longer performs point 2, but YASnippet is powerful enough that we can simply do that ourselves in the template.
 
 *** Roam Capture
 
@@ -3878,7 +3877,7 @@ A full week-long agenda is usually too cluttered for me to read, so I'll narrow 
 
 *** Agenda View
 
-The Org agenda is a very nice feature, but by default it doesn't really provide enough customization to fit my needs. I like to have nice categories to make parsing my todos easier, so we'll use ~org-super-agenda~:
+The Org agenda is a very nice feature, but by default it doesn't really provide enough customization to fit my needs. I like to have nice categories to make reading my todos easier, so we'll use ~org-super-agenda~:
 
 #+begin_src emacs-lisp :tangle packages.el
 (package! org-super-agenda)
