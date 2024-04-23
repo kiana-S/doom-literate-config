@@ -3800,10 +3800,13 @@ Subnote of `(let ((node (org-roam-node-at-point)))
 :END:\n\n$0"
            :target (file "20240329114914-a.org")))
         org-roam-dailies-capture-templates
-        '(("t" "Task" entry "* TODO $1\n\n$0"
-           :target (file+head+olp "%<%Y-%m-%d>.org"
-                                  "#+title: %<%Y-%m-%d>"
-                                  ("Todos"))
+        '(("e" "Event" entry "* $1\n%^t\n\n$0"
+           :target (file+head "%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>")
+           :empty-lines 1)
+          ("t" "Task" entry "* TODO $1\n\n$0"
+           :target (file+head "%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>")
            :empty-lines 1)
           ("n" "Notes" entry "** $0"
            :target (file+head+olp "%<%Y-%m-%d>.org"
