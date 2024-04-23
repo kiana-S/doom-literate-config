@@ -1347,8 +1347,10 @@ When a buffer has line numbers, they can interfere with the margins and make the
 
 #+begin_src emacs-lisp
 (add-hook! display-line-numbers-mode
-  (setq-local visual-fill-column-extra-text-width '(0 . 6))
-  (visual-fill-column--adjust-window))
+  (require 'visual-fill-column)
+  (when visual-fill-column-mode
+    (setq-local visual-fill-column-extra-text-width '(0 . 6))
+    (visual-fill-column--adjust-window)))
 #+end_src
 
 ** Dashboard
