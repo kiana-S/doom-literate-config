@@ -3724,10 +3724,7 @@ The goal is to hook into Org's capturing system to get it to feed its template i
          (org-capture-plist (plist-put org-capture-plist :template "")))
     (cl-letf (((symbol-function 'org-kill-is-subtree-p) #'always))
       (funcall old-fn arg)
-      (yas-expand-snippet
-       (concat (pcase (org-capture-get :type)
-                 ('entry "`(make-string (org-outline-level) ?*)`"))
-               template)))))
+      (yas-expand-snippet template))))
 #+end_src
 
 This advice overrides ~org-capture-place-template~, the function that:
@@ -3794,7 +3791,7 @@ With those variables created, we can define our templates.
                               "#+title: ${title}")
            :unnarrowed t)
           ("h" "Heading" entry
-           "* ${title}
+           "`(make-string (org-outline-level) ?*)`* ${title}
 :RELATED:
 Subnote of `(let ((node (org-roam-node-at-point)))
               (format \"[[id:%s][%s]]\"
@@ -3808,7 +3805,7 @@ Subnote of `(let ((node (org-roam-node-at-point)))
                                   "#+title: %<%Y-%m-%d>"
                                   ("Todos"))
            :empty-lines 1)
-          ("n" "Notes" entry "* $0"
+          ("n" "Notes" entry "** $0"
            :target (file+head+olp "%<%Y-%m-%d>.org"
                                   "#+title: %<%Y-%m-%d>"
                                   ("Course Notes :notes:"))
