@@ -88,6 +88,10 @@ It's not the right tool for every codebase, but proper use of literate programmi
 
 ** Current Issues
 
+*** TODO Nix
+
+Creating garbage collection roots currently doesn't work.
+
 *** TODO Idris
 
 The configuration for Idris is a bit light, and could use some touching up.
