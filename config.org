@@ -3686,7 +3686,14 @@ By default, Roam generates file names containing both a timestamp and the node t
 
 *** Roam Buffer
 
-The unlinked references section is turned off by default for performance reasons, but I've never had any serious issues with it. Let's turn that on, and also make sure backlinks are unique.
+The unlinked references section is turned off by default for performance reasons, but sometimes I want to see that information when writing notes. I also don't want it to show up for every node, because some of my nodes have quite a large reference list. Let's add a predicate to control when unlinked references are shown.
+
+#+begin_src emacs-lisp
+(defadvice! ~/org-roam-unlinked-references-p (node)
+  "A predicate to control when unlinked references are shown in the `org-roam' buffer."
+  :before-while #'org-roam-unlinked-references-section
+  (assoc "UNLINKED_REFS" (org-roam-node-properties node)))
+#+end_src
 
 #+begin_src emacs-lisp
 (after! org-roam
@@ -4088,6 +4095,17 @@ To make opening the journal more convenient, here's a command to open the latest
 
 Despite Emacs being my editor of choice for programming, I don't actually have a lot of configuration for programming languages. I suppose that this is because language packages tend to not need much personal configuration, as the bounds of what a language mode needs to do are typically defined by the language itself.
 
+** Indentation
+
+#+call: confpkg("Indent")
+
+I prefer 2-space indentation in all circumstances. Unfortunately, Emacs's indentation is mode-specific, so I have to configure every mode's indentation separately.
+
+#+begin_src emacs-lisp
+(after! css-mode
+  (setq css-indent-offset 2))
+#+end_src
+
 ** Dired
 
 #+call: confpkg("Mode: Dired")
@@ -4190,6 +4208,16 @@ Operators being in italics looks ugly in this mode too, but unfortunately due to
     `(idris-semantic-bound-face :foreground ,(doom-color 'magenta) :slant italic)
     `(idris-semantic-function-face :foreground ,(doom-color 'dark-green))
     `(idris-semantic-postulate-face :foreground ,(doom-color 'yellow))))
+#+end_src
+
+** Yuck
+
+#+call: confpkg("Mode: Yuck")
+
+Since I've started using [[https://github.com/elkowar/eww/tree/master?tab=readme-ov-file][EWW (Elkowar's Wacky Widgets)]] for my linux setup, it would be nice to have an editing mode for its configuration language.
+
+#+begin_src emacs-lisp :tangle packages.el
+(package! yuck-mode)
 #+end_src
 
 * Scratch
